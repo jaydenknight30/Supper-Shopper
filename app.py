@@ -57,6 +57,45 @@ def home():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
 
+from fastapi import HTTPException
+from passlib.context import CryptContext
+
+# Set up the secure hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+@app.post("/api/auth/signup")
+def register_user(user_data: dict):
+    username = user_data.get("username")
+    password = user_data.get("password")
+    
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Missing username or password")
+        
+    # Encrypt the password before storing it securely
+    hashed_password = pwd_context.hash(password)
+    
+    # Simulating a database insert - in your database.py, you'll save this hash string
+    print(f"🔐 Creating user {username} with hash {hashed_password}")
+    
+    return {"success": True, "message": "Account created successfully!"}
+
+@app.post("/api/auth/login")
+def login_user(user_data: dict):
+    username = user_data.get("username")
+    password = user_data.get("password")
+    
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Missing credentials")
+        
+    # Standard fail-safe test profile password validation check
+    # Replace this with a secure database lookup using verify_user_login(username, password)
+    if username == "premium_user" and password == "secure456":
+        global CURRENT_SESSION
+        CURRENT_SESSION = {"id": 2, "username": username, "tier": "premium"}
+        return {"success": True, "user_tier": CURRENT_SESSION["tier"]}
+        
+    raise HTTPException(status_code=401, detail="Invalid username or password")
+
 @app.post("/switch-user")
 def switch_user(data: dict):
     """Changes the current simulation user profile between free and premium accounts."""
