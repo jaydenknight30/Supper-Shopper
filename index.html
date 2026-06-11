@@ -192,7 +192,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (overlay) overlay.style.display = "none";
         
         const selector = document.getElementById("tierSelect");
-        if (selector) selector.value = savedTier;
+        if (selector) {
+            selector.value = savedTier; // Fixed alignment mapping here
+        }
         console.log(`🔄 Session Restored: Signed in as ${savedUser}`);
     }
 });
@@ -261,13 +263,15 @@ async function handleAuthSubmit() {
         return;
     }
     
-    const base = window.location.origin;
-    const endpoint = isSignUpMode ? `${base}/api/auth/signup` : `${base}/api/auth/login`;
+    // Clean relative path syntax
+    const endpoint = isSignUpMode ? "/api/auth/signup" : "/api/auth/login";
     
     try {
         const response = await fetch(endpoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json" 
+            },
             body: JSON.stringify({ username: userVal, password: passVal })
         });
         
