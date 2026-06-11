@@ -523,4 +523,8 @@ def read_root():
     return "<h1>Supper-Shopper API is running!</h1><p>Visit /docs for the interactive portal.</p>"
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    import uvicorn
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    # Turned reload OFF for multi-worker container stability
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False)
