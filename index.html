@@ -122,8 +122,16 @@
         <option value="free">Free Tier (Standard Tesco Baseline)</option>
     </select>
 
-    <label for="receiptInput">Simulated Camera Receipt Text</label>
-    <textarea id="receiptInput" rows="5" placeholder="Type items on separate lines...&#10;coffee&#10;bread&#10;milk"></textarea>
+    <div style="margin-bottom: 20px;">
+    <label style="display: block; color: #94a3b8; font-size: 13px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Scan Receipt Photo</label>
+    <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 80px; background: #0f172a; border: 2px dashed #334155; border-radius: 12px; transition: border-color 0.2s; cursor: pointer;">
+        <input type="file" id="receipt-file-input" accept="image/*" capture="environment" onchange="updateUploadStatus()" style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
+        <div id="upload-status-message" style="text-align: center; color: #64748b; font-size: 14px; pointer-events: none;">
+            <span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📸 Tap to Open Camera</span>
+            or select an image from your device
+        </div>
+    </div>
+</div>
 
     <button onclick="sendScanRequest()">Scan & Optimise Basket</button>
 
@@ -208,36 +216,52 @@ async function handleAuthSubmit() {
     }
 }
 
+function updateUploadStatus() {
+    const fileInput = document.getElementById("receipt-file-input");
+    const statusMsg = document.getElementById("upload-status-message");
+    if(fileInput && fileInput.files.length > 0) {
+        statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ File Ready:</span> ${fileInput.files[0].name}`;
+    }
+}
+
 async function sendScanRequest() {
-    const rawText = document.getElementById("receiptInput").value;
-    const selectTier = document.getElementById("tierSelect").value;
+    const fileInput = document.getElementById("receipt-file-input");
+    if (!fileInput || fileInput.files.length === 0) {
+        alert("Please snap a photo of a receipt or upload an image first!");
+        return;
+    }
+
+    const tierSelect = document.getElementById("user-tier-selector") || document.getElementById("TierSelect");
+    const tierVal = tierSelect ? tierSelect.value : "free";
     
-    const payload = {
-        text: rawText,
-        budget: 50.00,
-        user_id: 1,
-        user_tier: selectTier
-    };
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("budget", "50.00");
+    formData.append("user_id", "1");
+    formData.append("user_tier", tierVal);
+
+    document.getElementById("upload-status-message").innerText = "Analyzing receipt characters (OCR)...";
 
     try {
-        // Automatically targets your live production backend path cleanly
-        const response = await fetch('/api/mobile/scan-receipt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        const response = await fetch(`${window.location.origin}/api/mobile/scan-receipt`, {
+            method: "POST",
+            body: formData
         });
-        
+
         const data = await response.json();
         
-        if(data.success) {
-            // Update Metric UI elements
+        if (response.ok && data.success) {
+            // Reset upload message wrapper back to baseline target state
+            document.getElementById("upload-status-message").innerHTML = `<span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📸 Tap to Open Camera</span>or select an image from your device`;
+            
+            // Update Metric UI elements exactly like your old code
             document.getElementById("scanTotal").innerText = `£${data.metrics.scanned_total.toFixed(2)}`;
             document.getElementById("optTotal").innerText = `£${data.metrics.optimized_total.toFixed(2)}`;
-            
+
             // Generate visual list view cards dynamically
             const container = document.getElementById("cardContainer");
             container.innerHTML = ""; // Clear old cards
-            
+
             data.mobile_list_cards.forEach(card => {
                 const cardEl = document.createElement("div");
                 cardEl.className = "item-card";
@@ -250,9 +274,13 @@ async function sendScanRequest() {
                 `;
                 container.appendChild(cardEl);
             });
+        } else {
+            alert(data.detail || "OCR system processing failure.");
+            document.getElementById("upload-status-message").innerHTML = `<span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📸 Tap to Open Camera</span>or select an image from your device`;
         }
     } catch (err) {
-        alert("Connection to live server timed out!");
+        alert("Network error processing receipt image analysis.");
+        document.getElementById("upload-status-message").innerHTML = `<span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📸 Tap to Open Camera</span>or select an image from your device`;
     }
 }
 </script>
