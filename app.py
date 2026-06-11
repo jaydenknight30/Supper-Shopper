@@ -109,16 +109,27 @@ def triage_receipt(receipt_data: dict):
             clean_line_text = line.strip().lower()
             raw_extracted_price = 2.50 # Default baseline dummy price
 
-        final_name = clean_line_text.title()
-        final_category = "other"
-        shorthand_key = "other"
+        # Default assumptions using the text extracted straight from the receipt line
+    final_name = clean_line_text.title()
+    final_category = "General Groceries"
+    
+    # Use the lowercase text as a fallback shorthand lookup key
+    shorthand_key = clean_line_text.strip().lower()
 
-        for shorthand, details in MAPPING_DICTIONARY.items():
-            if shorthand in clean_line_text:
-                final_name = details["clean_name"]
-                final_category = details["category"]
-                shorthand_key = shorthand
-                break
+    # Try to find a precise name/category override in your custom dictionary
+    matched_predefined = False
+    for shorthand, details in MAPPING_DICTIONARY.items():
+        if shorthand in clean_line_text:
+            final_name = details["clean_name"]
+            final_category = details.get("category", "Groceries")
+            shorthand_key = shorthand
+            matched_predefined = True
+            break
+            
+    # If it's a completely new item, clean up stray characters for the card display
+    if not matched_predefined:
+        # Removes numbers or trailing single letters left over from receipt text lines
+        final_name = re.sub(r'\d+', '', final_name).replace('.', '').strip()
 
         # Move the basket assignment out of the price_match block so it runs for ALL items
         if final_name in parsed_basket:
