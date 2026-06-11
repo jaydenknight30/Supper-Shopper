@@ -163,7 +163,26 @@
 let isSignUpMode = false;
 
 function toggleAuthMode() {
-   // 1. Session Persistence Layer: Automatically log in on page refresh
+    isSignUpMode = !isSignUpMode;
+    const title = document.getElementById("auth-title");
+    const subtitle = document.getElementById("auth-subtitle");
+    const toggleText = document.getElementById("auth-toggle-text");
+    const toggleLink = document.getElementById("auth-toggle-link");
+
+    if (isSignUpMode) {
+        title.innerText = "Create Your Account";
+        subtitle.innerText = "Join Supper-Shopper to optimize your groceries";
+        toggleText.innerText = "Already a member? ";
+        toggleLink.innerText = "Sign In";
+    } else {
+        title.innerText = "Supper-Shopper";
+        subtitle.innerText = "Sign in to access your budget profile";
+        toggleText.innerText = "Don't have an account? ";
+        toggleLink.innerText = "Create Account";
+    }
+}
+
+// 1. Session Persistence Layer
 document.addEventListener("DOMContentLoaded", () => {
     const savedUser = localStorage.getItem("supper_shopper_user");
     const savedTier = localStorage.getItem("supper_shopper_tier");
@@ -178,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// 2. Interactive calculations evaluating complexity matching
+// 2. Real-time strength calculator logic
 function checkPasswordStrength() {
     const password = document.getElementById("auth-password").value;
     const meterWrapper = document.getElementById("strength-meter-wrapper");
@@ -227,7 +246,7 @@ function checkPasswordStrength() {
     return score;
 }
 
-// 3. Network Authorization Submit handling routing configuration
+// 3. Network Authorization Submit Handler
 async function handleAuthSubmit() {
     const userVal = document.getElementById("auth-username").value.trim();
     const passVal = document.getElementById("auth-password").value.trim();
@@ -278,7 +297,16 @@ async function handleAuthSubmit() {
     }
 }
 
-// 4. Receipt Engine Request Transmission Pipeline 
+// 4. Update the Upload Label Visual Feedback
+function updateUploadStatus() {
+    const fileInput = document.getElementById("receipt-file-input");
+    const statusMsg = document.getElementById("upload-status-message");
+    if (fileInput && fileInput.files.length > 0 && statusMsg) {
+        statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">📁 File Ready:</span> ${fileInput.files[0].name}`;
+    }
+}
+
+// 5. Receipt Engine Request Transmission Pipeline
 async function sendScanRequest() {
     const fileInput = document.getElementById("receipt-file-input");
     if (!fileInput || fileInput.files.length === 0) {
@@ -311,20 +339,21 @@ async function sendScanRequest() {
             document.getElementById("optTotal").innerText = `£${data.metrics.optimized_total.toFixed(2)}`;
 
             const container = document.getElementById("cardContainer");
-            container.innerHTML = ""; // Clear out past cards
-
-            data.mobile_list_cards.forEach(card => {
-                const cardEl = document.createElement("div");
-                cardEl.className = "item-card";
-                cardEl.innerHTML = `
-                    <div>
-                        <div class="item-card-title">${card.title}</div>
-                        <div class="item-card-sub">${card.subtitle}</div>
-                    </div>
-                    <div style="font-weight: bold; color: var(--accent-green);">£${card.price.toFixed(2)}</div>
-                `;
-                container.appendChild(cardEl);
-            });
+            if (container) {
+                container.innerHTML = "";
+                data.mobile_list_cards.forEach(card => {
+                    const cardEl = document.createElement("div");
+                    cardEl.className = "item-card";
+                    cardEl.innerHTML = `
+                        <div>
+                            <div class="item-card-title">${card.title}</div>
+                            <div class="item-card-sub">${card.subtitle}</div>
+                        </div>
+                        <div style="font-weight: bold; color: var(--accent-green);">£${card.price.toFixed(2)}</div>
+                    `;
+                    container.appendChild(cardEl);
+                });
+            }
         } else {
             alert(data.detail || "OCR system processing failure.");
             document.getElementById("upload-status-message").innerHTML = `<span style="color: #ef4444;">Processing error.</span>`;
@@ -333,15 +362,6 @@ async function sendScanRequest() {
         alert("Network error processing receipt image analysis.");
         document.getElementById("upload-status-message").innerHTML = `<span style="color: #ef4444;">Connection failed.</span>`;
     }
-}
-
-function updateUploadStatus() {
-    const fileInput = document.getElementById("receipt-file-input");
-    const statusMsg = document.getElementById("upload-status-message");
-    if (fileInput && fileInput.files.length > 0 && statusMsg) {
-        statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">📁 File Ready:</span> ${fileInput.files[0].name}`;
-    }
-}
 }
 </script>
 
