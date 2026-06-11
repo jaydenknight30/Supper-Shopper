@@ -94,14 +94,23 @@
         <p id="auth-subtitle" style="color: #94a3b8; font-size: 14px; text-align: center; margin-bottom: 24px;">Sign in to access your budget profile</p>
         
         <div style="margin-bottom: 16px;">
-            <label style="display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase;">Username</label>
-            <input type="text" id="auth-username" placeholder="e.g., premium_user" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; outline: none;">
-        </div>
+        <label style="display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase;">Username</label>
+        <input type="text" id="auth-username" placeholder="e.g., premium_user" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; outline: none;">
+    </div>
+
+    <div style="margin-bottom: 24px;">
+        <label style="display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase;">Password</label>
+        <input type="password" id="auth-password" oninput="checkPasswordStrength()" placeholder="••••••••" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; outline: none;">
         
-        <div style="margin-bottom: 24px;">
-            <label style="display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase;">Password</label>
-            <input type="password" id="auth-password" placeholder="••••••••" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; outline: none;">
+        <div id="strength-meter-wrapper" style="display: none; margin-top: 8px;">
+            <div style="display: flex; gap: 4px; height: 4px; width: 100%; background: #334155; border-radius: 2px; overflow: hidden; margin-bottom: 4px;">
+                <div id="bar-1" style="flex:1; transition: background 0.2s;"></div>
+                <div id="bar-2" style="flex:1; transition: background 0.2s;"></div>
+                <div id="bar-3" style="flex:1; transition: background 0.2s;"></div>
+            </div>
+            <span id="strength-text" style="font-size: 11px; color: #64748b; font-weight: 500;">Password requirements unmet.</span>
         </div>
+    </div>
         
         <button onclick="handleAuthSubmit()" style="width: 100%; padding: 14px; background: #10b981; border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-bottom: 16px;">Continue</button>
         
@@ -154,37 +163,88 @@
 let isSignUpMode = false;
 
 function toggleAuthMode() {
-    isSignUpMode = !isSignUpMode;
-    const title = document.getElementById("auth-title");
-    const subtitle = document.getElementById("auth-subtitle");
-    const toggleText = document.getElementById("auth-toggle-text");
-    const toggleLink = document.getElementById("auth-toggle-link");
+   // 1. Session Persistence Layer: Automatically log in on page refresh
+document.addEventListener("DOMContentLoaded", () => {
+    const savedUser = localStorage.getItem("supper_shopper_user");
+    const savedTier = localStorage.getItem("supper_shopper_tier");
     
-    if (isSignUpMode) {
-        title.innerText = "Create Your Account";
-        subtitle.innerText = "Join Supper-Shopper to optimize your groceries";
-        toggleText.innerText = "Already a member? ";
-        toggleLink.innerText = "Sign In";
-    } else {
-        title.innerText = "Supper-Shopper";
-        subtitle.innerText = "Sign in to access your budget profile";
-        toggleText.innerText = "Don't have an account? ";
-        toggleLink.innerText = "Create Account";
+    if (savedUser && savedTier) {
+        const overlay = document.getElementById("auth-overlay");
+        if (overlay) overlay.style.display = "none";
+        
+        const selector = document.getElementById("tierSelect");
+        if (selector) selector.value = savedTier;
+        console.log(`🔄 Session Restored: Signed in as ${savedUser}`);
     }
+});
+
+// 2. Interactive calculations evaluating complexity matching
+function checkPasswordStrength() {
+    const password = document.getElementById("auth-password").value;
+    const meterWrapper = document.getElementById("strength-meter-wrapper");
+    
+    if (!isSignUpMode) {
+        if (meterWrapper) meterWrapper.style.display = "none";
+        return 0;
+    }
+    
+    if (meterWrapper) meterWrapper.style.display = "block";
+    const bar1 = document.getElementById("bar-1");
+    const bar2 = document.getElementById("bar-2");
+    const bar3 = document.getElementById("bar-3");
+    const label = document.getElementById("strength-text");
+
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password) && /[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    if (bar1 && bar2 && bar3) {
+        bar1.style.background = bar2.style.background = bar3.style.background = "#334155";
+    }
+
+    if (label && bar1 && bar2 && bar3) {
+        if (score === 0) {
+            label.innerText = "Too Short (Min. 8 characters)";
+            label.style.color = "#ef4444";
+        } else if (score === 1) {
+            bar1.style.background = "#ef4444";
+            label.innerText = "Weak — Add numbers & capitals";
+            label.style.color = "#ef4444";
+        } else if (score === 2) {
+            bar1.style.background = "#f59e0b";
+            bar2.style.background = "#f59e0b";
+            label.innerText = "Medium — Add a symbol (!@#$)";
+            label.style.color = "#f59e0b";
+        } else if (score === 3) {
+            bar1.style.background = "#10b981";
+            bar2.style.background = "#10b981";
+            bar3.style.background = "#10b981";
+            label.innerText = "Strong Secure Password Approved";
+            label.style.color = "#10b981";
+        }
+    }
+    return score;
 }
 
+// 3. Network Authorization Submit handling routing configuration
 async function handleAuthSubmit() {
-    const userVal = document.getElementById("auth-username").value;
-    const passVal = document.getElementById("auth-password").value;
+    const userVal = document.getElementById("auth-username").value.trim();
+    const passVal = document.getElementById("auth-password").value.trim();
     
     if (!userVal || !passVal) {
-        alert("Please complete all profile credentials!");
+        alert("Please complete all profile fields!");
+        return;
+    }
+    
+    if (isSignUpMode && checkPasswordStrength() < 2) {
+        alert("Password security level is too low. Please make it stronger!");
         return;
     }
     
     const base = window.location.origin;
     const endpoint = isSignUpMode ? `${base}/api/auth/signup` : `${base}/api/auth/login`;
-
+    
     try {
         const response = await fetch(endpoint, {
             method: "POST",
@@ -196,34 +256,29 @@ async function handleAuthSubmit() {
         
         if (response.ok) {
             if (isSignUpMode) {
-                alert("Success! Now log in with your credentials.");
+                alert("Account created successfully! Switching to sign-in screen.");
                 toggleAuthMode();
             } else {
-                // Successfully logged in! Hide the modal and unlock dashboard
-                document.getElementById("auth-overlay").style.display = "none";
+                localStorage.setItem("supper_shopper_user", userVal);
+                localStorage.setItem("supper_shopper_tier", result.user_tier);
                 
-                // Set the premium or free user tier drop-down automatically from session state data
-                if(result.user_tier === "premium") {
-                     document.getElementById("user-tier-selector").value = "premium";
-                }
-                alert(`Welcome back, ${userVal}!`);
+                const overlay = document.getElementById("auth-overlay");
+                if (overlay) overlay.style.display = "none";
+                
+                const tierSelector = document.getElementById("tierSelect");
+                if (tierSelector) tierSelector.value = result.user_tier;
+                
+                alert(`Welcome back ${userVal}!`);
             }
         } else {
-            alert(result.detail || "Authentication validation failure.");
+            alert(result.detail || "Authentication verification failed.");
         }
     } catch (err) {
-        alert("Server connection timed out.");
+        alert("Server validation connection timed out.");
     }
 }
 
-function updateUploadStatus() {
-    const fileInput = document.getElementById("receipt-file-input");
-    const statusMsg = document.getElementById("upload-status-message");
-    if(fileInput && fileInput.files.length > 0) {
-        statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ File Ready:</span> ${fileInput.files[0].name}`;
-    }
-}
-
+// 4. Receipt Engine Request Transmission Pipeline 
 async function sendScanRequest() {
     const fileInput = document.getElementById("receipt-file-input");
     if (!fileInput || fileInput.files.length === 0) {
@@ -231,9 +286,9 @@ async function sendScanRequest() {
         return;
     }
 
-    const tierSelect = document.getElementById("user-tier-selector") || document.getElementById("TierSelect");
+    const tierSelect = document.getElementById("tierSelect");
     const tierVal = tierSelect ? tierSelect.value : "free";
-    
+
     const formData = new FormData();
     formData.append("file", fileInput.files[0]);
     formData.append("budget", "50.00");
@@ -249,18 +304,14 @@ async function sendScanRequest() {
         });
 
         const data = await response.json();
-        
+
         if (response.ok && data.success) {
-            // Reset upload message wrapper back to baseline target state
-            document.getElementById("upload-status-message").innerHTML = `<span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📸 Tap to Open Camera</span>or select an image from your device`;
-            
-            // Update Metric UI elements exactly like your old code
+            document.getElementById("upload-status-message").innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ File Processed Successfully!</span>`;
             document.getElementById("scanTotal").innerText = `£${data.metrics.scanned_total.toFixed(2)}`;
             document.getElementById("optTotal").innerText = `£${data.metrics.optimized_total.toFixed(2)}`;
 
-            // Generate visual list view cards dynamically
             const container = document.getElementById("cardContainer");
-            container.innerHTML = ""; // Clear old cards
+            container.innerHTML = ""; // Clear out past cards
 
             data.mobile_list_cards.forEach(card => {
                 const cardEl = document.createElement("div");
@@ -270,18 +321,27 @@ async function sendScanRequest() {
                         <div class="item-card-title">${card.title}</div>
                         <div class="item-card-sub">${card.subtitle}</div>
                     </div>
-                    <div style="font-weight:bold; color:var(--accent-green);">£${card.price.toFixed(2)}</div>
+                    <div style="font-weight: bold; color: var(--accent-green);">£${card.price.toFixed(2)}</div>
                 `;
                 container.appendChild(cardEl);
             });
         } else {
             alert(data.detail || "OCR system processing failure.");
-            document.getElementById("upload-status-message").innerHTML = `<span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📸 Tap to Open Camera</span>or select an image from your device`;
+            document.getElementById("upload-status-message").innerHTML = `<span style="color: #ef4444;">Processing error.</span>`;
         }
     } catch (err) {
         alert("Network error processing receipt image analysis.");
-        document.getElementById("upload-status-message").innerHTML = `<span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📸 Tap to Open Camera</span>or select an image from your device`;
+        document.getElementById("upload-status-message").innerHTML = `<span style="color: #ef4444;">Connection failed.</span>`;
     }
+}
+
+function updateUploadStatus() {
+    const fileInput = document.getElementById("receipt-file-input");
+    const statusMsg = document.getElementById("upload-status-message");
+    if (fileInput && fileInput.files.length > 0 && statusMsg) {
+        statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">📁 File Ready:</span> ${fileInput.files[0].name}`;
+    }
+}
 }
 </script>
 
