@@ -66,34 +66,39 @@ def triage_receipt(receipt_data: dict):
         if any(keyword in line.lower() for keyword in ["store", "total", "subtotal", "---"]):
             continue
             
-        price_match = re.search(r"£?(\d+\.\d{2})", line)
+        # --- PARSING LAYER ---
+        price_match = re.search(r"r'£?(\d+\.\d{2})", line)
+        
         if price_match:
             clean_line_text = line.replace("*", "").replace("£" + price_match.group(1), "").strip().lower()
             clean_line_text = re.sub(r'\s+[v]$', '', clean_line_text).strip()
-            
-            final_name = clean_line_text.title()
-            final_category = "other"
-            shorthand_key = "other"
-            
-            for shorthand, details in MAPPING_DICTIONARY.items():
-                if shorthand in clean_line_text:
-                    final_name = details["clean_name"]
-                    final_category = details["category"]
-                    shorthand_key = shorthand
-                    break
-                    
-            # FIXED INDENTATION: Aligned properly inside the 'if price_match:' block
-            if final_name in parsed_basket:
-                parsed_basket[final_name]["quantity"] += 1
-            else:
-                # --- EXTENDED MULTIPACK DETECTION ALGORITHM LAYER ---
-                pack_multiplier = 1
-                pack_match = re.search(r"(\d+)\s*pk", clean_line_text)
-                if pack_match:
-                    pack_multiplier = int(pack_match.group(1)) # Extracts the number out of '4pk'
+            raw_extracted_price = float(price_match.group(1))
+        else:
+            # Fallback if the user just types plain words without a price attached
+            clean_line_text = line.strip().lower()
+            raw_extracted_price = 2.50 # Default baseline dummy price
+
+        final_name = clean_line_text.title()
+        final_category = "other"
+        shorthand_key = "other"
+
+        for shorthand, details in MAPPING_DICTIONARY.items():
+            if shorthand in clean_line_text:
+                final_name = details["clean_name"]
+                final_category = details["category"]
+                shorthand_key = shorthand
+                break
+
+        # Move the basket assignment out of the price_match block so it runs for ALL items
+        if final_name in parsed_basket:
+            parsed_basket[final_name]["quantity"] += 1
+        else:
+            pack_multiplier = 1
+            pack_match = re.search(r"(\d+)\s*pk", clean_line_text)
+            if pack_match:
+                pack_multiplier = int(pack_match.group(1))
 
             if CURRENT_SESSION["tier"] == "premium":
-                # --- SAFE PREMIUM PRICING LOOKUP LAYER ---
                 market_data = fetch_live_prices(shorthand_key)
                 temp_matrix = {
                     "Sainsburys": float(market_data.get("Sainsburys", 2.50)),
@@ -103,22 +108,19 @@ def triage_receipt(receipt_data: dict):
                 best_store = min(temp_matrix, key=temp_matrix.get)
                 best_price = temp_matrix[best_store]
             else:
-                # Free Tier: Standard baseline prices only, locked to Tesco
                 best_store = "TESCO"
-                best_price = 2.50
+                best_price = raw_extracted_price
                 if shorthand_key == "milk": best_price = 1.65
                 if shorthand_key == "bread": best_price = 1.20
                 if shorthand_key == "pasta": best_price = 1.50
 
-                # Save item details along with its internal physical pack units count
-                parsed_basket[final_name] = {
-                    "price": best_price, 
-                    "quantity": 1, 
-                    "pack_units": pack_multiplier, # Track how many pieces are inside
-                    "category": final_category,
-                    "assigned_store": best_store
-
-                }
+            parsed_basket[final_name] = {
+                "price": best_price,
+                "quantity": 1,
+                "pack_units": pack_multiplier,
+                "category": final_category,
+                "assigned_store": best_store
+            }
 
 # === PASTE THE NEW FINALIZE LAYER RIGHT HERE ===
     cards = []
