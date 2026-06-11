@@ -174,8 +174,9 @@ async function handleAuthSubmit() {
         return;
     }
     
-    const endpoint = isSignUpMode ? "/api/auth/signup" : "/api/auth/login";
-    
+    const base = window.location.origin;
+    const endpoint = isSignUpMode ? `${base}/api/auth/signup` : `${base}/api/auth/login`;
+
     try {
         const response = await fetch(endpoint, {
             method: "POST",
