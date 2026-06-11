@@ -171,64 +171,53 @@ def triage_receipt(receipt_data: dict):
 
     # 4. Run your evaluation loops on only the clean lines
     for line in lines:
-        # --- PARSING LAYER ---
         price_match = re.search(r"£?(\d+\.\d{2})", line)
         
         if price_match:
             clean_line_text = line.replace("*", "").replace("£" + price_match.group(1), "").strip().lower()
-            clean_line_text = re.sub(r'\s+[v]$', '', clean_line_text).strip()
+            clean_line_text = re.sub(r'\s+[\d]+$', '', clean_line_text).strip()
             raw_extracted_price = float(price_match.group(1))
         else:
-            # Fallback if the user just types plain words without a price attached
             clean_line_text = line.strip().lower()
-            raw_extracted_price = 2.50 # Default baseline dummy price
+            raw_extracted_price = 2.50  # Stable fallback price if no price is on the line
 
         # Default assumptions using the text extracted straight from the receipt line
-    final_name = clean_line_text.title()
-    final_category = "General Groceries"
-    
-    # Use the lowercase text as a fallback shorthand lookup key
-    shorthand_key = clean_line_text.strip().lower()
+        final_name = clean_line_text.title()
+        final_category = "General Groceries"
+        shorthand_key = clean_line_text.strip().lower()
 
-    # Try to find a precise name/category override in your custom dictionary
-    matched_predefined = False
-    for shorthand, details in MAPPING_DICTIONARY.items():
-        if shorthand in clean_line_text:
-            final_name = details["clean_name"]
-            final_category = details.get("category", "Groceries")
-            shorthand_key = shorthand
-            matched_predefined = True
-            break
-            
-    # If it's a completely new item, clean up stray characters for the card display
-    if not matched_predefined:
-        # Removes numbers or trailing single letters left over from receipt text lines
-        final_name = re.sub(r'\d+', '', final_name).replace('.', '').strip()
+        # Try to find a precise name/category override in your custom dictionary
+        matched_predefined = False
+        for shorthand, details in MAPPING_DICTIONARY.items():
+            if shorthand in clean_line_text:
+                final_name = details["clean_name"]
+                final_category = details.get("category", "Groceries")
+                shorthand_key = shorthand
+                matched_predefined = True
+                break
+                
+        # If it's a completely new item, clean up stray characters for the card display
+        if not matched_predefined:
+            final_name = re.sub(r'\d+', '', final_name).replace('.', '').strip()
 
-        # Move the basket assignment out of the price_match block so it runs for ALL items
+        # Safely assign or increment quantities inside the basket dictionary
         if final_name in parsed_basket:
             parsed_basket[final_name]["quantity"] += 1
         else:
+            # Look up live supermarket price matrices
             pack_multiplier = 1
-            pack_match = re.search(r"(\d+)\s*pk", clean_line_text)
-            if pack_match:
-                pack_multiplier = int(pack_match.group(1))
-
             if receipt_data.get("user_tier") == "premium":
                 market_data = fetch_live_prices(shorthand_key)
                 temp_matrix = {
                     "Sainsburys": float(market_data.get("Sainsburys", 2.50)),
                     "Tesco": float(market_data.get("Tesco", 2.40)),
-                    "Asda": float(market_data.get("Asda", 2.20))
+                    "Asda": float(market_data.get("Asda", 2.20)),
                 }
                 best_store = min(temp_matrix, key=temp_matrix.get)
                 best_price = temp_matrix[best_store]
             else:
                 best_store = "TESCO"
                 best_price = raw_extracted_price
-                if shorthand_key == "milk": best_price = 1.65
-                if shorthand_key == "bread": best_price = 1.20
-                if shorthand_key == "pasta": best_price = 1.50
 
             parsed_basket[final_name] = {
                 "price": best_price,
