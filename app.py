@@ -74,6 +74,41 @@ def switch_user(data: dict):
 def get_current_user():
     return CURRENT_SESSION
 
+from passlib.context import CryptContext
+
+# Set up the secure hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+@app.post("/api/auth/signup")
+def register_user(user_data: dict):
+    username = user_data.get("username")
+    password = user_data.get("password")
+    
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Missing credentials")
+        
+    # Encrypt the password before storing it anywhere
+    hashed_password = pwd_context.hash(password)
+    
+    # Here you will write to your user database table
+    print(f"🔐 Creating user {username} with hash {hashed_password}")
+    
+    return {"success": True, "message": "Account created successfully!"}
+
+@app.post("/api/auth/login")
+def login_user(user_data: dict):
+    username = user_data.get("username")
+    password = user_data.get("password")
+    
+    # 1. Fetch user from database using your verify function
+    # 2. Check password with pwd_context.verify(password, hashed_password)
+    
+    # Simulating a successful authenticated session token handshake
+    global CURRENT_SESSION
+    CURRENT_SESSION = {"id": 2, "username": username, "tier": "free"}
+    
+    return {"success": True, "user_tier": CURRENT_SESSION["tier"]}
+
 @app.post("/api/mobile/scan-receipt")
 def triage_receipt(receipt_data: dict):
     raw_text = receipt_data.get("text", "")
