@@ -92,18 +92,23 @@ def triage_receipt(receipt_data: dict):
                 if pack_match:
                     pack_multiplier = int(pack_match.group(1)) # Extracts the number out of '4pk'
 
-                if CURRENT_SESSION["tier"] == "premium":
-                    # Premium Option: Cross-compare store arrays
-                    store_prices = fetch_live_prices(shorthand_key)
-                    best_store = min(store_prices, key=store_prices.get)
-                    best_price = store_prices[best_store]
-                else:
-                    # Free Tier: Standard baseline prices only, locked to Tesco
-                    best_store = "TESCO"
-                    best_price = 2.50
-                    if shorthand_key == "milk": best_price = 1.65
-                    if shorthand_key == "bread": best_price = 1.20
-                    if shorthand_key == "pasta": best_price = 1.50
+            if CURRENT_SESSION["tier"] == "premium":
+                # --- SAFE PREMIUM PRICING LOOKUP LAYER ---
+                market_data = fetch_live_prices(shorthand_key)
+                temp_matrix = {
+                    "Sainsburys": float(market_data.get("Sainsburys", 2.50)),
+                    "Tesco": float(market_data.get("Tesco", 2.40)),
+                    "Asda": float(market_data.get("Asda", 2.20))
+                }
+                best_store = min(temp_matrix, key=temp_matrix.get)
+                best_price = temp_matrix[best_store]
+            else:
+                # Free Tier: Standard baseline prices only, locked to Tesco
+                best_store = "TESCO"
+                best_price = 2.50
+                if shorthand_key == "milk": best_price = 1.65
+                if shorthand_key == "bread": best_price = 1.20
+                if shorthand_key == "pasta": best_price = 1.50
 
                 # Save item details along with its internal physical pack units count
                 parsed_basket[final_name] = {
