@@ -88,6 +88,30 @@
 </head>
 <body>
 
+<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #1e293b; width: 100%; max-width: 400px; padding: 30px; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);">
+        <h2 id="auth-title" style="color: #34d399; font-size: 24px; font-weight: bold; margin-bottom: 8px; text-align: center;">Supper-Shopper</h2>
+        <p id="auth-subtitle" style="color: #94a3b8; font-size: 14px; text-align: center; margin-bottom: 24px;">Sign in to access your budget profile</p>
+        
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase;">Username</label>
+            <input type="text" id="auth-username" placeholder="e.g., premium_user" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; outline: none;">
+        </div>
+        
+        <div style="margin-bottom: 24px;">
+            <label style="display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase;">Password</label>
+            <input type="password" id="auth-password" placeholder="••••••••" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; outline: none;">
+        </div>
+        
+        <button onclick="handleAuthSubmit()" style="width: 100%; padding: 14px; background: #10b981; border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-bottom: 16px;">Continue</button>
+        
+        <div style="text-align: center;">
+            <span id="auth-toggle-text" style="color: #64748b; font-size: 14px;">Don't have an account? </span>
+            <a href="javascript:void(0)" onclick="toggleAuthMode()" id="auth-toggle-link" style="color: #34d399; font-size: 14px; text-decoration: none; font-weight: 500;">Create Account</a>
+        </div>
+    </div>
+</div>
+
 <div class="app-container">
     <h1>Supper-Shopper</h1>
     <div class="subtitle">Mobile Optimisation Controller</div>
@@ -118,6 +142,71 @@
 </div>
 
 <script>
+
+let isSignUpMode = false;
+
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    const title = document.getElementById("auth-title");
+    const subtitle = document.getElementById("auth-subtitle");
+    const toggleText = document.getElementById("auth-toggle-text");
+    const toggleLink = document.getElementById("auth-toggle-link");
+    
+    if (isSignUpMode) {
+        title.innerText = "Create Your Account";
+        subtitle.innerText = "Join Supper-Shopper to optimize your groceries";
+        toggleText.innerText = "Already a member? ";
+        toggleLink.innerText = "Sign In";
+    } else {
+        title.innerText = "Supper-Shopper";
+        subtitle.innerText = "Sign in to access your budget profile";
+        toggleText.innerText = "Don't have an account? ";
+        toggleLink.innerText = "Create Account";
+    }
+}
+
+async function handleAuthSubmit() {
+    const userVal = document.getElementById("auth-username").value;
+    const passVal = document.getElementById("auth-password").value;
+    
+    if (!userVal || !passVal) {
+        alert("Please complete all profile credentials!");
+        return;
+    }
+    
+    const endpoint = isSignUpMode ? "/api/auth/signup" : "/api/auth/login";
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: userVal, password: passVal })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            if (isSignUpMode) {
+                alert("Success! Now log in with your credentials.");
+                toggleAuthMode();
+            } else {
+                // Successfully logged in! Hide the modal and unlock dashboard
+                document.getElementById("auth-overlay").style.display = "none";
+                
+                // Set the premium or free user tier drop-down automatically from session state data
+                if(result.user_tier === "premium") {
+                     document.getElementById("user-tier-selector").value = "premium";
+                }
+                alert(`Welcome back, ${userVal}!`);
+            }
+        } else {
+            alert(result.detail || "Authentication validation failure.");
+        }
+    } catch (err) {
+        alert("Server connection timed out.");
+    }
+}
+
 async function sendScanRequest() {
     const rawText = document.getElementById("receiptInput").value;
     const selectTier = document.getElementById("tierSelect").value;
