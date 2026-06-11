@@ -57,15 +57,26 @@ def get_current_user():
 @app.post("/api/mobile/scan-receipt")
 def triage_receipt(receipt_data: dict):
     raw_text = receipt_data.get("text", "")
-    budget_limit = receipt_data.get("budget", 50.00)
-    
+    budget_limit = float(receipt_data.get("budget", 50.00))
+
     parsed_basket = {}
-    lines = raw_text.strip().split("\n")
-    
-    for line in lines:
-        if any(keyword in line.lower() for keyword in ["store", "total", "subtotal", "---"]):
+
+    # 1. Break the camera scan text into individual rows
+    raw_lines = raw_text.strip().split("\n")
+    lines = []
+
+    # 2. Define our receipt junk metadata filter words
+    junk_keywords = ["total", "subtotal", "balance", "change", "vat", "visa", "card", "shop", "thank you", "items", "---"]
+
+    # 3. Filter the lines aggressively before evaluating products
+    for line in raw_lines:
+        clean_line = line.strip().lower()
+        if not clean_line or any(junk in clean_line for junk in junk_keywords):
             continue
-            
+        lines.append(line)
+
+    # 4. Run your evaluation loops on only the clean lines
+    for line in lines:
         # --- PARSING LAYER ---
         price_match = re.search(r"£?(\d+\.\d{2})", line)
         
