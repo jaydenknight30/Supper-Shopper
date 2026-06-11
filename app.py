@@ -164,15 +164,30 @@ def triage_receipt(receipt_data: dict):
             "category": details['category']
         })
 
+    # --- STEP 3: TRIAGE BUDGET ENGINE ---
+    scanned_total = sum(d["price"] * d["quantity"] for d in parsed_basket.values())
+    optimized_total = scanned_total  # Baseline tracker
+    triage_was_applied = "No"
+
+    # If the user is over budget, trigger the automated triage alerts
+    if scanned_total > budget_limit:
+        triage_was_applied = "Yes"
+        
+        # Loop through your basket to attach custom UI budget warn-flags
+        for item_name, details in parsed_basket.items():
+            if details["price"] > 2.00:
+                details["category"] = details.get("category", "other") + " ⚠️ (Budget Alert)"
+
+    # Now return the clean metrics payload
     return {
         "success": True,
         "mobile_user_tier": receipt_data.get("user_tier", "free"),
         "metrics": {
             "target_budget": budget_limit,
-            "scanned_total": sum(d["price"] * d["quantity"] for d in parsed_basket.values()),
-            "optimized_total": sum(d["price"] * d["quantity"] for d in parsed_basket.values()),
-            "savings_found": 1.20,
-            "triage_applied": True
+            "scanned_total": scanned_total,
+            "optimized_total": optimized_total,
+            "savings_found": round(max(0.0, scanned_total - optimized_total), 2),
+            "triage_applied": triage_was_applied
         },
         "mobile_list_cards": cards
     }
