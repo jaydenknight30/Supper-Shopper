@@ -1,0 +1,38 @@
+{
+  "coffee": {
+    "Tesco": 2.90,
+    "Asda": 2.20,
+    "Sainsburys": 2.85,
+    "category": "beverages"
+  },
+  "bread": {
+    "Tesco": 1.45,
+    "Asda": 1.20,
+    "Sainsburys": 1.30,
+    "category": "bakery"
+  },
+  "pasta": {
+    "Tesco": 0.95,
+    "Asda": 0.85,
+    "Sainsburys": 1.10,
+    "category": "pantry"
+  },
+  "milk": {
+    "Tesco": 1.65,
+    "Asda": 1.55,
+    "Sainsburys": 1.60,
+    "category": "dairy"
+  },
+  "eggs": {
+    "Tesco": 2.40,
+    "Asda": 2.20,
+    "Sainsburys": 2.35,
+    "category": "dairy"
+  },
+  "bacon": {
+    "Tesco": 3.00,
+    "Asda": 2.50,
+    "Sainsburys": 2.80,
+    "category": "meat"
+  }
+}
