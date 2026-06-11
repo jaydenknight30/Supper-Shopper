@@ -178,6 +178,22 @@ def triage_receipt(receipt_data: dict):
             if details["price"] > 2.00:
                 details["category"] = details.get("category", "other") + " ⚠️ (Budget Alert)"
 
+    # --- NEW STEP 4: DATABASE PERSISTENCE ---
+    try:
+        # Pull the active user ID from your session state
+        user_id = CURRENT_SESSION.get("id", 1)
+        
+        # Save this basket run to your supershopper.db database log
+        save_optimization_record(
+            user_id=user_id,
+            scanned_total=scanned_total,
+            optimized_total=optimized_total,
+            triage_applied=triage_was_applied
+        )
+        print("📊 Basket successfully archived to database log!")
+    except Exception as db_err:
+        print(f"⚠️ Database archiving failed: {db_err}")
+
     # Now return the clean metrics payload
     return {
         "success": True,
