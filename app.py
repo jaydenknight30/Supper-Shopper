@@ -98,7 +98,7 @@ def triage_receipt(receipt_data: dict):
             if pack_match:
                 pack_multiplier = int(pack_match.group(1))
 
-            if CURRENT_SESSION["tier"] == "premium":
+            if receipt_data.get("user_tier") == "premium":
                 market_data = fetch_live_prices(shorthand_key)
                 temp_matrix = {
                     "Sainsburys": float(market_data.get("Sainsburys", 2.50)),
