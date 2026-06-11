@@ -67,7 +67,7 @@ def triage_receipt(receipt_data: dict):
             continue
             
         # --- PARSING LAYER ---
-        price_match = re.search(r"r'£?(\d+\.\d{2})", line)
+        price_match = re.search(r"£?(\d+\.\d{2})", line)
         
         if price_match:
             clean_line_text = line.replace("*", "").replace("£" + price_match.group(1), "").strip().lower()
