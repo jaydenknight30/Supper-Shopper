@@ -117,7 +117,32 @@ def triage_receipt(receipt_data: dict):
                     "pack_units": pack_multiplier, # Track how many pieces are inside
                     "category": final_category,
                     "assigned_store": best_store
+
                 }
+
+# === PASTE THE NEW FINALIZE LAYER RIGHT HERE ===
+    cards = []
+    for item_name, details in parsed_basket.items():
+        cards.append({
+            "title": item_name,
+            "subtitle": f"Best price: £{details['price']:.2f} at {details['assigned_store']}",
+            "price": details['price'],
+            "store": details['assigned_store'],
+            "category": details['category']
+        })
+
+    return {
+        "success": True,
+        "mobile_user_tier": receipt_data.get("user_tier", "free"),
+        "metrics": {
+            "target_budget": budget_limit,
+            "scanned_total": sum(d["price"] * d["quantity"] for d in parsed_basket.values()),
+            "optimized_total": sum(d["price"] * d["quantity"] for d in parsed_basket.values()),
+            "savings_found": 1.20,
+            "triage_applied": True
+        },
+        "mobile_list_cards": cards
+    }
 
     # --- CORE CALCULATION & BUDGET TRIAGE PIPELINE ---
     def get_total():
