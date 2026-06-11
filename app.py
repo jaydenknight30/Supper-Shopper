@@ -63,39 +63,72 @@ from passlib.context import CryptContext
 # Set up the secure hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+import sqlite3
+
+def init_auth_db():
+    conn = sqlite3.connect("supershopper.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            tier TEXT DEFAULT 'free'
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# Spin up the table automatically on launch
+init_auth_db()
+
 @app.post("/api/auth/signup")
 def register_user(user_data: dict):
-    username = user_data.get("username")
-    password = user_data.get("password")
+    username = user_data.get("username", "").strip()
+    password = user_data.get("password", "").strip()
     
     if not username or not password:
-        raise HTTPException(status_code=400, detail="Missing username or password")
+        raise HTTPException(status_code=400, detail="Credentials cannot be empty")
         
-    # Encrypt the password before storing it securely
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
     hashed_password = pwd_context.hash(password)
     
-    # Simulating a database insert - in your database.py, you'll save this hash string
-    print(f"🔐 Creating user {username} with hash {hashed_password}")
-    
-    return {"success": True, "message": "Account created successfully!"}
+    conn = sqlite3.connect("supershopper.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, tier) VALUES (?, ?, ?)",
+            (username, hashed_password, "free")
+        )
+        conn.commit()
+        return {"success": True, "message": "Account secured and stored successfully!"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="That username is already taken!")
+    finally:
+        conn.close()
 
 @app.post("/api/auth/login")
 def login_user(user_data: dict):
-    username = user_data.get("username")
-    password = user_data.get("password")
+    username = user_data.get("username", "").strip()
+    password = user_data.get("password", "").strip()
     
-    # Standard fail-safe fallback check for testing
-    if username == "premium user" and password == "secure456":
-        global CURRENT_SESSION
-        CURRENT_SESSION = {"id": 2, "username": username, "tier": "premium"}
-        return {"success": True, "user_tier": CURRENT_SESSION["tier"]}
+    # 1. Keep our hardcoded sandbox profiles active for quick testing
+    if (username == "premium_user" or username == "premium user") and password == "secure456":
+        return {"success": True, "user_tier": "premium"}
         
-    if username == "premium_user" and password == "secure456":
-        CURRENT_SESSION = {"id": 2, "username": "premium user", "tier": "premium"}
-        return {"success": True, "user_tier": CURRENT_SESSION["tier"]}
-
-    # If the hardcoded credentials don't hit, reject instantly with an error status
-    return {"success": False, "detail": "Invalid username or password"}
+    # 2. Look up the real hashed profile records from SQL database table
+    conn = sqlite3.connect("supershopper.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT password_hash, tier FROM users WHERE username = ?", (username,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row and pwd_context.verify(password, row[0]):
+        return {"success": True, "user_tier": row[1]}
+        
+    raise HTTPException(status_code=401, detail="Invalid username or password credentials")
 
 @app.post("/switch-user")
 def switch_user(data: dict):
