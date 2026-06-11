@@ -312,5 +312,17 @@ def mobile_api_scan(payload: dict):
         # Restore the default session state so the web dashboard doesn't break
         CURRENT_SESSION = original_session
 
+        from fastapi.responses import HTMLResponse
+import os
+
+@app.get("/", response_class=HTMLResponse)
+def read_root():
+    # Looks for your index.html file in the same directory
+    html_path = os.path.join(os.path.dirname(__file__), "index.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>Supper-Shopper API is running!</h1><p>Visit /docs for the interactive portal.</p>"
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
