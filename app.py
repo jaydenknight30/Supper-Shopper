@@ -54,7 +54,7 @@ def switch_user(data: dict):
 def get_current_user():
     return CURRENT_SESSION
 
-@app.post("/triage-receipt")
+@app.post("/api/mobile/scan-receipt")
 def triage_receipt(receipt_data: dict):
     raw_text = receipt_data.get("text", "")
     budget_limit = receipt_data.get("budget", 50.00)
