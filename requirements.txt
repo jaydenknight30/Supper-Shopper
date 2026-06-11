@@ -5,5 +5,4 @@ beautifulsoup4
 passlib
 bcrypt
 python-multipart
-pytesseract
 Pillow
