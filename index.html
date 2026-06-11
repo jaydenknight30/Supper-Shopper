@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperShopper App Matrix Layout</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; }
+        .container { max-width: 850px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .auth-bar { background: #e5e7eb; padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { color: #1e3a8a; margin: 0; font-size: 26px; }
+        .tier-badge { background-color: #1e3a8a; color: white; padding: 4px 8px; font-size: 12px; border-radius: 4px; font-weight: bold; margin-left: 10px; }
+        .free-badge { background-color: #6b7280; }
+        label { font-weight: bold; display: block; margin: 15px 0 5px; }
+        input[type="number"], textarea { width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; }
+        textarea { height: 120px; font-family: monospace; }
+        button { background-color: #1e3a8a; color: white; border: none; padding: 14px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; }
+        .result-box { margin-top: 30px; padding: 20px; border-radius: 8px; background-color: #f9fafb; border: 1px solid #e5e7eb; display: none; }
+        .alert { padding: 12px; border-radius: 6px; font-weight: bold; margin-bottom: 15px; }
+        .alert-triggered { background-color: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
+        .alert-safe { background-color: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #f3f4f6; }
+        .store-tag { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        .tesco-tag { background-color: #fee2e2; color: #dc2626; }
+        .sainsburys-tag { background-color: #ffedd5; color: #ea580c; }
+        .select-btn { padding: 6px 12px; background: #4b5563; color: white; border-radius: 4px; font-size: 12px; border: none; width: auto; margin-top: 0; cursor: pointer;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="auth-bar">
+        <div>🔑 Active Simulation Session Account: <strong id="sessionUser">...</strong> <span id="sessionBadge" class="tier-badge">...</span></div>
+        <div>
+            <button class="select-btn" onclick="toggleUser('free_user')" style="background:#6b7280;">Login Free Account</button>
+            <button class="select-btn" onclick="toggleUser('premium_user')" style="background:#1e3a8a;">Login Premium Account</button>
+        </div>
+    </div>
+
+    <h1>🛒 SuperShopper Budget Framework Layout</h1>
+    <p>Testing dynamic algorithmic level access gates based on account verification status rules.</p>
+    
+    <label for="budgetInput">Target Budget Limit (£):</label>
+    <input type="number" id="budgetInput" value="50.00" step="5.00">
+    
+    <label for="receiptText">Messy Receipt String Block (OCR Raw Input):</label>
+    <textarea id="receiptText">TESCO STORE 4920
+* PREM COFFEE GRAN £6.50 V
+* CHOC DIGESTIVES £1.80 V
+* SLMN FLLTS 4PK £8.00 V
+* DRY PASTA 1KG £1.50 V
+* WHITE BREAD £1.20 V</textarea>
+    
+    <button onclick="processReceipt()">Run Optimization Engine</button>
+    
+    <div id="resultBox" class="result-box">
+        <div id="statusAlert" class="alert"></div>
+        <div><strong>Original Scan Total:</strong> <span id="initialTotal"></span></div>
+        <div><strong>Optimized Bill Total:</strong> <span id="finalTotal"></span></div>
+        
+        <h3>Optimized Item Matrix Blueprint Output:</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Store Group</th>
+                    <th>Product Name</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody id="basketTableBody"></tbody>
+        </table>
+
+        <hr style="margin-top: 40px; border: 0; border-top: 2px dashed #e5e7eb;">
+        <h3 style="color: #4b5563;">📜 User Transaction Account History Ledger</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Run ID</th>
+                    <th>Timestamp</th>
+                    <th>Target Budget</th>
+                    <th>Optimized Total</th>
+                    <th>Triaged?</th>
+                </tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function updateSessionUI() {
+        const res = await fetch('/get-current-user');
+        const user = await res.json();
+        document.getElementById('sessionUser').innerText = user.username;
+        const badge = document.getElementById('sessionBadge');
+        badge.innerText = user.tier.toUpperCase();
+        badge.className = user.tier === 'premium' ? 'tier-badge' : 'tier-badge free-badge';
+        loadDatabaseHistory();
+    }
+
+    async function toggleUser(username) {
+        await fetch('/switch-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username })
+        });
+        updateSessionUI();
+        document.getElementById('resultBox').style.display = 'none';
+    }
+
+    async function processReceipt() {
+        const budget = parseFloat(document.getElementById('budgetInput').value);
+        const text = document.getElementById('receiptText').value;
+        
+        const response = await fetch('/triage-receipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ budget: budget, text: text })
+        });
+        
+        const data = await response.json();
+        document.getElementById('resultBox').style.display = 'block';
+        document.getElementById('initialTotal').innerText = `£${data.initial_total.toFixed(2)}`;
+        document.getElementById('finalTotal').innerText = `£${data.final_total.toFixed(2)}`;
+        
+        const alertBox = document.getElementById('statusAlert');
+        alertBox.className = data.triage_applied ? 'alert alert-triggered' : 'alert alert-safe';
+        alertBox.innerText = data.triage_applied ? '⚠️ Optimization Applied.' : '✅ Basket fits inside budget profile constraints.';
+        
+        const tbody = document.getElementById('basketTableBody');
+        tbody.innerHTML = '';
+        
+        data.optimized_basket.forEach(item => {
+            const storeClass = item.assigned_store.toLowerCase() === 'tesco' ? 'tesco-tag' : 'sainsburys-tag';
+            tbody.innerHTML += `<tr>
+                <td><span class="store-tag ${storeClass}">${item.assigned_store}</span></td>
+                <td><strong>${item.item_name}</strong></td>
+                <td>${item.quantity}x</td>
+                <td>£${item.unit_price.toFixed(2)}</td>
+                <td>£${item.subtotal.toFixed(2)}</td>
+            </tr>`;
+        });
+        loadDatabaseHistory();
+    }
+
+    async function loadDatabaseHistory() {
+        const response = await fetch('/get-history');
+        const logs = await response.json();
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = '';
+        
+        if(logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color:#9ca3af;">No transaction records found for this account module.</td></tr>';
+            return;
+        }
+        
+        logs.forEach(log => {
+            tbody.innerHTML += `<tr>
+                <td>#${log.id}</td>
+                <td><small>${log.timestamp}</small></td>
+                <td>£${log.budget.toFixed(2)}</td>
+                <td><strong>£${log.final.toFixed(2)}</strong></td>
+                <td>${log.triaged}</td>
+            </tr>`;
+        });
+    }
+    
+    window.onload = updateSessionUI;
+</script>
+</body>
+</html>
