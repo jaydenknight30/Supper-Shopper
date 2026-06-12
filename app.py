@@ -149,11 +149,6 @@ def switch_user(data: dict):
 def get_current_user():
     return CURRENT_SESSION
 
-from passlib.context import CryptContext
-
-# Set up the secure hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 from fastapi import UploadFile, File, Form
 
