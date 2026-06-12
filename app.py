@@ -154,44 +154,6 @@ from passlib.context import CryptContext
 # Set up the secure hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@app.post("/api/auth/signup")
-def register_user(user_data: dict):
-    username = user_data.get("username")
-    password = user_data.get("password")
-    
-    if not username or not password:
-        raise HTTPException(status_code=400, detail="Missing credentials")
-        
-    hashed_password = pwd_context.hash(password)
-    
-    # Securely save to your actual database.py tables
-    try:
-        save_optimization_record(username, "Registration", 0.0, 0.0, "{}")
-        print(f"🔐 Database account created for: {username}")
-        return {"success": True, "message": "Account created successfully!"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Database write error")
-
-@app.post("/api/auth/login")
-def login_user(user_data: dict):
-    username = user_data.get("username")
-    password = user_data.get("password")
-    
-    if not username or not password:
-        raise HTTPException(status_code=400, detail="Missing credentials")
-        
-    # Standard fail-safe fallback check for testing
-    if username == "premium_user" and password == "secure456":
-        global CURRENT_SESSION
-        CURRENT_SESSION = {"id": 2, "username": username, "tier": "premium"}
-        return {"success": True, "user_tier": CURRENT_SESSION["tier"]}
-        
-    # Real database lookup fallback fallback
-    if verify_user_login(username, password):
-        CURRENT_SESSION = {"id": 3, "username": username, "tier": "free"}
-        return {"success": True, "user_tier": CURRENT_SESSION["tier"]}
-        
-    raise HTTPException(status_code=401, detail="Invalid username or password")
 
 from fastapi import UploadFile, File, Form
 
