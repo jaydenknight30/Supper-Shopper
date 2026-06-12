@@ -85,7 +85,7 @@
         .item-card-title { font-weight: bold; text-transform: capitalize; }
         .item-card-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
         
-/* App Header Bar Structural Styles */
+/* 1. This forces the title and the sign-out button to opposite sides */
 .app-header {
     display: flex;
     justify-content: space-between;
@@ -96,22 +96,18 @@
     border-bottom: 1px solid #1e293b;
 }
 
-.brand-info h1 {
-    font-size: 20px;
-    margin: 0;
-    color: #ffffff;
-}
-
-/* Slick Header Actions */
+/* 2. This keeps the sign-out button from stretching out like a large row */
 .header-action-btn {
     background: #1e293b;
     color: #94a3b8;
     border: 1px solid #334155;
-    padding: 8px 14px;
-    border-radius: 20px;
+    padding: 8px 16px;       /* Adds padding around the text */
+    border-radius: 20px;     /* Gives it a sleek pill look */
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    width: auto;             /* CRITICAL: Keeps it tight around the word "Sign Out" */
+    white-space: nowrap;     /* Prevents the text from wrapping onto two lines */
     transition: all 0.2s ease;
 }
 
