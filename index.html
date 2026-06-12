@@ -84,6 +84,72 @@
         }
         .item-card-title { font-weight: bold; text-transform: capitalize; }
         .item-card-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+        
+/* App Header Bar Structural Styles */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #1e293b;
+}
+
+.brand-info h1 {
+    font-size: 20px;
+    margin: 0;
+    color: #ffffff;
+}
+
+/* Slick Header Actions */
+.header-action-btn {
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.header-action-btn:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+/* Enhanced Control Panel Layout Styling */
+.scanner-card {
+    background: #1e293b;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid #334155;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    margin-bottom: 20px;
+}
+
+.primary-scan-btn {
+    width: 100%;
+    padding: 14px;
+    background: #10b981;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 20px;
+}
+
+.primary-scan-btn:hover {
+    background: #059669;
+}
+
+
     </style>
 </head>
 <body>
@@ -122,36 +188,44 @@
 </div>
 
 <div class="app-container">
-    <h1>Supper-Shopper</h1>
-    <div class="subtitle">Mobile Optimisation Controller</div>
-
-    <label for="tierSelect">User Account Level</label>
-    <select id="tierSelect">
-        <option value="premium">Premium Tier (Cross-Store Scan)</option>
-        <option value="free">Free Tier (Standard Tesco Baseline)</option>
-    </select>
-
-    <div style="margin-bottom: 20px;">
-    <label style="display: block; color: #94a3b8; font-size: 13px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Scan Receipt Photo</label>
-    <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 80px; background: #0f172a; border: 2px dashed #334155; border-radius: 12px; transition: border-color 0.2s; cursor: pointer;">
-        <input type="file" id="receipt-file-input" accept="image/*" capture="environment" onchange="updateUploadStatus()" style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
-        <div id="upload-status-message" style="text-align: center; color: #64748b; font-size: 14px; pointer-events: none;">
-            <span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📸 Tap to Open Camera</span>
-            or select an image from your device
+    <header class="app-header">
+        <div class="brand-info">
+            <h1>Supper-Shopper</h1>
+            <div class="subtitle">Mobile Optimisation Controller</div>
         </div>
-    </div>
-</div>
+        <button id="logout-btn" onclick="handleLogout()" class="header-action-btn">
+            Sign Out
+        </button>
+    </header>
 
-    <button onclick="sendScanRequest()">Scan & Optimise Basket</button>
+    <div class="scanner-card">
+        <select id="tierSelect" style="display: none;">
+            <option value="premium">Premium Tier</option>
+            <option value="free" selected>Free Tier</option>
+        </select>
 
-    <div class="metrics-grid">
-        <div class="metric-card">
-            <div style="color:var(--text-muted); font-size:12px;">Scanned Total</div>
-            <div class="metric-val" id="scanTotal">£0.00</div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; color: #94a3b8; font-size: 13px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Scan Receipt Photo</label>
+            <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 88px; background: #0f172a; border: 2px dashed #334155; border-radius: 12px; cursor: pointer;">
+                <input type="file" id="receipt-file-input" accept="image/*" capture="environment" onchange="updateUploadStatus()" style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2;">
+                <div id="upload-status-message" style="text-align: center; color: #64748b; font-size: 14px; pointer-events: none;">
+                    <span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📷 Tap to Open Camera</span>
+                    or select an image from your device
+                </div>
+            </div>
         </div>
-        <div class="metric-card">
-            <div style="color:var(--text-muted); font-size:12px;">Optimised Cost</div>
-            <div class="metric-val" id="optTotal" style="color:var(--accent-green);">£0.00</div>
+
+        <button onclick="sendScanRequest()" class="primary-scan-btn">Scan & Optimise Basket</button>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div style="color: var(--text-muted); font-size: 12px;">Scanned Total</div>
+                <div class="metric-val" id="scanTotal">£0.00</div>
+            </div>
+            <div class="metric-card">
+                <div style="color: var(--text-muted); font-size: 12px;">Optimised Cost</div>
+                <div class="metric-val" id="optTotal" style="color: var(--accent-green);">£0.00</div>
+            </div>
         </div>
     </div>
 
@@ -208,6 +282,8 @@ function checkPasswordStrength() {
         if (meterWrapper) meterWrapper.style.display = "none";
         return 0;
     }
+    
+
     
     if (meterWrapper) meterWrapper.style.display = "block";
     const bar1 = document.getElementById("bar-1");
@@ -367,6 +443,27 @@ async function sendScanRequest() {
         document.getElementById("upload-status-message").innerHTML = `<span style="color: #ef4444;">Connection failed.</span>`;
     }
 }
+
+function handleLogout() {
+    // 1. Wipe out the saved user session memory
+    localStorage.removeItem("supper_shopper_user");
+    localStorage.removeItem("supper_shopper_tier");
+    
+    // 2. Bring back the mobile login screen overlay instantly
+    const overlay = document.getElementById("auth-overlay");
+    if (overlay) {
+        overlay.style.display = "flex";
+    }
+    
+    // 3. Reset the input text boxes so they are completely clean
+    const userField = document.getElementById("auth-username");
+    const passField = document.getElementById("auth-password");
+    if (userField) userField.value = "";
+    if (passField) passField.value = "";
+    
+    alert("You have logged out successfully.");
+}
+
 </script>
 
 </body>
