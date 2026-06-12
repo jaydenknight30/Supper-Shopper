@@ -119,10 +119,6 @@ def login_user(user_data: dict):
     username = user_data.get("username", "").strip()
     password = user_data.get("password", "").strip()
 
-    # Fallback sandbox profile for developer testing
-    if username == "premium_user" and password == "secure456":
-        return {"success": True, "user_tier": "premium"}
-
     # Look up the credentials inside our SQLite database
     conn = sqlite3.connect("supershopper.db")
     cursor = conn.cursor()
@@ -130,7 +126,7 @@ def login_user(user_data: dict):
     row = cursor.fetchone()
     conn.close()
 
-    # Verify if the user exists and the submitted password matches the secure hash
+    # Verify if the user exists and the password matches the secure hash
     if row and pwd_context.verify(password, row[0]):
         return {"success": True, "user_tier": row[1]}
 
