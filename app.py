@@ -113,22 +113,23 @@ def register_user(user_data: dict):
 def login_user(user_data: dict):
     username = user_data.get("username", "").strip()
     password = user_data.get("password", "").strip()
-    
+
     # 1. Keep our hardcoded sandbox profiles active for quick testing
     if (username == "premium_user" or username == "premium user") and password == "secure456":
         return {"success": True, "user_tier": "premium"}
-        
+
     # 2. Look up the real hashed profile records from SQL database table
     conn = sqlite3.connect("supershopper.db")
     cursor = conn.cursor()
     cursor.execute("SELECT password_hash, tier FROM users WHERE username = ?", (username,))
     row = cursor.fetchone()
     conn.close()
-    
+
     if row and pwd_context.verify(password, row[0]):
         return {"success": True, "user_tier": row[1]}
-        
-    raise HTTPException(status_code=401, detail="Invalid username or password credentials")
+
+    # Return a clean JSON failure response instead of a crashing exception status code
+    return {"success": False, "detail": "Invalid username or password credentials."}
 
 @app.post("/switch-user")
 def switch_user(data: dict):
