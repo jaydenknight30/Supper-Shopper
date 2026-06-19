@@ -4,8 +4,147 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supper-Shopper</title>
-    
-    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Modern Dark Theme Initialization Core Variables */
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --accent-green: #10b981;
+            --accent-green-hover: #059669;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        /* SaaS Dedicated App Dashboard Card Frame Layout */
+        .app-container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 460px;
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Custom Header Brand Identity Section */
+        .app-header {
+            margin-bottom: 24px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .app-header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .app-header .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* Optimization Execution Action Button UI Rules */
+        .primary-scan-btn {
+            width: 100%;
+            background-color: var(--accent-green);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-top: 4px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .primary-scan-btn:hover {
+            background-color: var(--accent-green-hover);
+        }
+
+        .primary-scan-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Twin Analytics Matrix Metrics Column Layout */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 4px;
+        }
+
+        .metric-card {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 14px;
+            text-align: left;
+        }
+
+        .metric-val {
+            font-size: 22px;
+            font-weight: 800;
+            margin-top: 6px;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+        }
+
+        /* Parsed Optimization Output Cards Stack */
+        .card-list {
+            margin-top: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .item-card {
+            background: #111827;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .item-card-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+
+        .item-card-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+    </style>
 </head>
 <body>
 
@@ -25,10 +164,10 @@
 
         <div style="margin-bottom: 20px;">
             <label style="display: block; color: #94a3b8; font-size: 13px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Scan Receipt Photo</label>
-            <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 88px; background: #0f172a; border: 2px dashed #334155; border-radius: 12px; cursor: pointer;">
+            <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 96px; background: #0f172a; border: 2px dashed #334155; border-radius: 14px; cursor: pointer;">
                 <input type="file" id="receipt-file-input" accept="image/*" capture="environment" onchange="updateUploadStatus()" style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2;">
-                <div id="upload-status-message" style="text-align: center; color: #64748b; font-size: 14px; pointer-events: none;">
-                    <span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 2px;">📷 Tap to Open Camera</span>
+                <div id="upload-status-message" style="text-align: center; color: #64748b; font-size: 14px; pointer-events: none; padding: 0 16px;">
+                    <span style="color: #34d399; font-weight: bold; display: block; margin-bottom: 4px;">📷 Tap to Open Camera</span>
                     or select an image from your device
                 </div>
             </div>
@@ -38,11 +177,11 @@
 
         <div class="metrics-grid">
             <div class="metric-card">
-                <div style="color: var(--text-muted); font-size: 12px;">Scanned Total</div>
+                <div style="color: var(--text-muted); font-size: 13px; font-weight: 500;">Scanned Total</div>
                 <div class="metric-val" id="scanTotal">£0.00</div>
             </div>
             <div class="metric-card">
-                <div style="color: var(--text-muted); font-size: 12px;">Optimised Cost</div>
+                <div style="color: var(--text-muted); font-size: 13px; font-weight: 500;">Optimised Cost</div>
                 <div class="metric-val" id="optTotal" style="color: var(--accent-green);">£0.00</div>
             </div>
         </div>
@@ -52,7 +191,6 @@
 </div>
 
 <script>
-// 1. Update the Upload Label Visual Feedback
 function updateUploadStatus() {
     const fileInput = document.getElementById("receipt-file-input");
     const statusMsg = document.getElementById("upload-status-message");
@@ -61,7 +199,6 @@ function updateUploadStatus() {
     }
 }
 
-// 2. Receipt Engine Request Transmission Pipeline
 async function sendScanRequest() {
     const fileInput = document.getElementById("receipt-file-input");
     if (!fileInput || fileInput.files.length === 0) {
@@ -104,14 +241,14 @@ async function sendScanRequest() {
                             <div class="item-card-title">${card.title}</div>
                             <div class="item-card-sub">${card.subtitle}</div>
                         </div>
-                        <div style="font-weight: bold; color: var(--accent-green);">£${card.price.toFixed(2)}</div>
+                        <div style="font-weight: bold; color: var(--accent-green); font-size: 16px;">£${card.price.toFixed(2)}</div>
                     `;
                     container.appendChild(cardEl);
                 });
             }
         } else {
             alert(data.detail || "OCR system processing failure.");
-            document.getElementById("upload-status-message").innerHTML = `<span style="color: #ef4444;">Processing error.</span>`;
+            document.getElementById("upload-status-message").innerHTML = `<span style="color: #text-muted;">Processing error.</span>`;
         }
     } catch (err) {
         alert("Network error processing receipt image analysis.");
