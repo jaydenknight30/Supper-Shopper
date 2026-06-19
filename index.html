@@ -349,24 +349,26 @@ async function handleAuthSubmit() {
         
         const result = await response.json();
         
-        if (response.ok) {
+        // Checks if the server responded OK and the database check passed
+        if (response.ok && result.success === true) {
             if (isSignUpMode) {
                 alert("Account created successfully! Switching to sign-in screen.");
                 toggleAuthMode();
             } else {
                 localStorage.setItem("supper_shopper_user", userVal);
-                localStorage.setItem("supper_shopper_tier", result.user_tier);
+                localStorage.setItem("supper_shopper_tier", result.user_tier || "free");
                 
                 const overlay = document.getElementById("auth-overlay");
                 if (overlay) overlay.style.display = "none";
                 
                 const tierSelector = document.getElementById("tierSelect");
-                if (tierSelector) tierSelector.value = result.user_tier;
+                if (tierSelector) tierSelector.value = result.user_tier || "free";
                 
                 alert(`Welcome back ${userVal}!`);
             }
         } else {
-            alert(result.detail || "Authentication verification failed.");
+            // Catches invalid passwords, unregistered accounts, and custom error details
+            alert(result.detail || "Authentication validation failed.");
         }
     } catch (err) {
         alert("Server validation connection timed out.");
