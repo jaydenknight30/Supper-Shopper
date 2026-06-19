@@ -1,146 +1,140 @@
+/* Core Layout & Variables Reset */
 :root {
     --bg-dark: #0f172a;
-    --card-dark: #1e293b;
+    --card-bg: #1e293b;
     --accent-green: #10b981;
+    --accent-green-hover: #059669;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
+    --border-color: #334155;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-dark);
     color: var(--text-main);
-    margin: 0;
-    padding: 20px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 20px;
 }
 
+/* App View Container Window */
 .app-container {
+    background: var(--card-bg);
     width: 100%;
     max-width: 480px;
-    background: var(--card-dark);
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-}
-
-h1 { font-size: 24px; margin-bottom: 4px; color: var(--accent-green); }
-.subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
-
-select, textarea, input {
-    width: 100%;
-    padding: 12px;
-    background: #334155;
-    border: 1px solid #475569;
-    border-radius: 8px;
-    color: white;
-    box-sizing: border-box;
-    margin-bottom: 16px;
-    font-size: 15px;
-}
-
-button {
-    width: 100%;
-    padding: 14px;
-    background: var(--accent-green);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-
-button:hover { opacity: 0.9; }
-
-.metrics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 24px;
-}
-
-.metric-card {
-    background: #334155;
-    padding: 14px;
-    border-radius: 8px;
-    text-align: center;
-}
-
-.metric-val { font-size: 20px; font-weight: bold; margin-top: 4px; }
-.card-list { margin-top: 24px; }
-
-.item-card {
-    background: #334155;
-    padding: 14px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    border-left: 4px solid var(--accent-green);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.item-card-title { font-weight: bold; text-transform: capitalize; }
-.item-card-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-
-.app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 24px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #1e293b;
-}
-
-.header-action-btn {
-    background: #1e293b;
-    color: #94a3b8;
-    border: 1px solid #334155;
-    padding: 8px 16px;
     border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    margin-top: 20px;
+}
+
+/* App Header Section */
+.app-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.app-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+}
+
+.app-header .subtitle {
     font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    width: auto;
-    white-space: nowrap;
-    transition: all 0.2s ease;
+    color: var(--text-muted);
+    margin-top: 2px;
 }
 
-.header-action-btn:hover {
-    background: #ef4444;
-    color: white;
-    border-color: #ef4444;
-}
-
-.scanner-card {
-    background: #1e293b;
-    border-radius: 16px;
-    padding: 20px;
-    border: 1px solid #334155;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    margin-bottom: 20px;
-}
-
+/* Action Control Buttons */
 .primary-scan-btn {
     width: 100%;
-    padding: 14px;
-    background: #10b981;
-    border: none;
-    border-radius: 12px;
+    background-color: var(--accent-green);
     color: white;
-    font-weight: bold;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
     font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background-color 0.2s ease, transform 0.1s ease;
     margin-bottom: 20px;
 }
 
 .primary-scan-btn:hover {
-    background: #059669;
+    background-color: var(--accent-green-hover);
+}
+
+.primary-scan-btn:active {
+    transform: scale(0.98);
+}
+
+/* Metrics Dashboard Grid Components */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.metric-card {
+    background: #0f172a;
+    border: 1px solid var(--border-color);
+    padding: 14px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.metric-val {
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 4px;
+    color: var(--text-main);
+}
+
+/* Parsed Grocery List Cards Layout */
+.card-list {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.item-card {
+    background: #111827;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.15s ease;
+}
+
+.item-card:hover {
+    transform: translateY(-2px);
+}
+
+.item-card-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-main);
+}
+
+.item-card-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
 }
