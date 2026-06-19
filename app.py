@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles  # <-- ADD THIS IMPORT
 import uvicorn
 import re
 import json
@@ -11,9 +12,12 @@ from database import init_db, save_optimization_record, get_history_logs
 app = FastAPI()
 init_db()
 
+# <-- ADD THIS LINE right below app = FastAPI() to serve your CSS file
+app.mount("/static", StaticFiles(directory="."), name="static")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows any mobile device to connect
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
