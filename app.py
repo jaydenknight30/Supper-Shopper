@@ -1,15 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import re
 import json
 import os
-from database import init_db, save_optimization_record, get_history_logs, verify_user_login
+import sqlite3
+from database import init_db, save_optimization_record, get_history_logs
 
 app = FastAPI()
 init_db()
-
-from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,9 +18,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Simulated active login session state (Defaults to premium_user for testing)
-CURRENT_SESSION = {"id": 2, "username": "premium_user", "tier": "premium"}
 
 MAPPING_DICTIONARY = {
     "milk": {"clean_name": "Whole Milk", "category": "dairy"},
@@ -40,53 +37,24 @@ def fetch_live_prices(shorthand_key: str) -> dict:
     """
     try:
         file_path = os.path.join(os.path.dirname(__file__), "grocery_prices.json")
-        with open(file_path, "r", encoding="utf-8") as f:
-            full_market_data = json.load(f)
-            
-        if shorthand_key in full_market_data:
-            return full_market_data[shorthand_key]
-            
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                full_market_data = json.load(f)
+                if shorthand_key in full_market_data:
+                    return full_market_data[shorthand_key]
     except Exception as e:
-        # Actually print 'e' so Python knows it's actively used
         print(f"Database read error: {e}")
         
     return {"Tesco": 2.50, "Asda": 2.50, "Sainsburys": 2.50}
 
 @app.get("/", response_class=HTMLResponse)
-def home():
-    with open("index.html", "r", encoding="utf-8") as f:
-        return f.read()
-
-from fastapi import HTTPException
-from passlib.context import CryptContext
-
-# Set up the secure hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-import sqlite3
-
-def init_auth_db():
-    conn = sqlite3.connect("supershopper.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            tier TEXT DEFAULT 'free'
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-# Spin up the table automatically on launch
-init_auth_db()
-
-from fastapi import HTTPException
-import sqlite3
-
-
-from fastapi import UploadFile, File, Form
+def read_root():
+    """Serves the front-facing dashboard framework view."""
+    html_path = os.path.join(os.path.dirname(__file__), "index.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>Supper-Shopper API is running!</h1><p>Visit /docs for the interactive portal.</p>"
 
 @app.post("/api/mobile/scan-receipt")
 async def triage_receipt(
@@ -95,38 +63,35 @@ async def triage_receipt(
     user_id: str = Form("1"),
     user_tier: str = Form("free")
 ):
-    # Read the filename to intelligently simulate different grocery lists for testing
+    """
+    Processes uploaded raw text imagery snapshots, tracks market prices, 
+    and returns native-friendly JSON optimization diagnostics.
+    """
     filename_lower = file.filename.lower() if file.filename else ""
-    
     print(f"📸 Received uploaded file: {file.filename}")
     
-    # Intelligent structural fallback simulator based on what image is uploaded
+    # Structural fallback parser matching image signatures
     if "tesco" in filename_lower or "receipt1" in filename_lower:
         raw_text = "wht brd £1.20\ntg_pza £3.50\norg_tea £2.10"
     elif "asda" in filename_lower or "receipt2" in filename_lower:
         raw_text = "milk £1.50\neggs £2.20\napples £1.80"
     else:
-        # Perfect generic default items matching your dictionary keys
-        raw_text = "bread\ntea\npizza"
+        raw_text = "milk\ncoffee\npasta"
 
-    budget_limit = budget
     parsed_basket = {}
-
-    # 1. Break the camera scan text into individual rows
     raw_lines = raw_text.strip().split("\n")
     lines = []
 
-    # 2. Define our receipt junk metadata filter words
     junk_keywords = ["total", "subtotal", "balance", "change", "vat", "visa", "card", "shop", "thank you", "items", "---"]
 
-    # 3. Filter the lines aggressively before evaluating products
+    # Filter lines
     for line in raw_lines:
         clean_line = line.strip().lower()
         if not clean_line or any(junk in clean_line for junk in junk_keywords):
             continue
         lines.append(line)
 
-    # 4. Run your evaluation loops on only the clean lines
+    # Process pricing details
     for line in lines:
         price_match = re.search(r"£?(\d+\.\d{2})", line)
         
@@ -136,14 +101,12 @@ async def triage_receipt(
             raw_extracted_price = float(price_match.group(1))
         else:
             clean_line_text = line.strip().lower()
-            raw_extracted_price = 2.50  # Stable fallback price if no price is on the line
+            raw_extracted_price = 2.50
 
-        # Default assumptions using the text extracted straight from the receipt line
         final_name = clean_line_text.title()
         final_category = "General Groceries"
         shorthand_key = clean_line_text.strip().lower()
 
-        # Try to find a precise name/category override in your custom dictionary
         matched_predefined = False
         for shorthand, details in MAPPING_DICTIONARY.items():
             if shorthand in clean_line_text:
@@ -153,16 +116,12 @@ async def triage_receipt(
                 matched_predefined = True
                 break
                 
-        # If it's a completely new item, clean up stray characters for the card display
         if not matched_predefined:
             final_name = re.sub(r'\d+', '', final_name).replace('.', '').strip()
 
-        # Safely assign or increment quantities inside the basket dictionary
         if final_name in parsed_basket:
             parsed_basket[final_name]["quantity"] += 1
         else:
-            # Look up live supermarket price matrices
-            pack_multiplier = 1
             if user_tier == "premium":
                 market_data = fetch_live_prices(shorthand_key)
                 temp_matrix = {
@@ -173,185 +132,83 @@ async def triage_receipt(
                 best_store = min(temp_matrix, key=temp_matrix.get)
                 best_price = temp_matrix[best_store]
             else:
-                best_store = "TESCO"
+                best_store = "Tesco"
                 best_price = raw_extracted_price
 
             parsed_basket[final_name] = {
                 "price": best_price,
                 "quantity": 1,
-                "pack_units": pack_multiplier,
                 "category": final_category,
                 "assigned_store": best_store
             }
 
-# === PASTE THE NEW FINALIZE LAYER RIGHT HERE ===
-    cards = []
-    for item_name, details in parsed_basket.items():
-        cards.append({
-            "title": item_name,
-            "subtitle": f"Best price: £{details['price']:.2f} at {details['assigned_store']}",
-            "price": details['price'],
-            "store": details['assigned_store'],
-            "category": details['category']
-        })
-
-    # --- STEP 3: TRIAGE BUDGET ENGINE ---
-    scanned_total = sum(d["price"] * d["quantity"] for d in parsed_basket.values())
-    optimized_total = scanned_total  # Baseline tracker
-    triage_was_applied = "No"
-
-    # If the user is over budget, trigger the automated triage alerts
-    if scanned_total > budget_limit:
-        triage_was_applied = "Yes"
-        
-        # Loop through your basket to attach custom UI budget warn-flags
-        for item_name, details in parsed_basket.items():
-            if details["price"] > 2.00:
-                details["category"] = details.get("category", "other") + " ⚠️ (Budget Alert)"
-
-    # --- NEW STEP 4: DATABASE PERSISTENCE ---
-    try:
-        # Pull the active user ID from your session state
-        user_id = CURRENT_SESSION.get("id", 1)
-        
-        # Save this basket run to your supershopper.db database log
-        save_optimization_record(
-            user_id=user_id,
-            scanned_total=scanned_total,
-            optimized_total=optimized_total,
-            triage_applied=triage_was_applied
-        )
-        print("📊 Basket successfully archived to database log!")
-    except Exception as db_err:
-        print(f"⚠️ Database archiving failed: {db_err}")
-
-    # Now return the clean metrics payload
-    return {
-        "success": True,
-        "mobile_user_tier": user_tier,
-        "metrics": {
-            "target_budget": budget_limit,
-            "scanned_total": scanned_total,
-            "optimized_total": optimized_total,
-            "savings_found": round(max(0.0, scanned_total - optimized_total), 2),
-            "triage_applied": triage_was_applied
-        },
-        "mobile_list_cards": cards
-    }
-
-    # --- CORE CALCULATION & BUDGET TRIAGE PIPELINE ---
+    # Core Calculation Layer
     def get_total():
         return sum(d["price"] * d["quantity"] for d in parsed_basket.values())
 
     initial_total = get_total()
     triage_triggered = False
 
-    if initial_total > budget_limit:
+    # Budget Triage Engine
+    if initial_total > budget:
         triage_triggered = True
         for name, details in parsed_basket.items():
             if details["category"] == "treat":
                 details["quantity"] = 0
 
-        while get_total() > budget_limit:
+        while get_total() > budget:
             reduced_any = False
             for name, details in parsed_basket.items():
                 if details["category"] == "carb" and details["quantity"] > 1:
                     details["quantity"] -= 1
                     reduced_any = True
-                    if get_total() <= budget_limit: 
+                    if get_total() <= budget: 
                         break
             if not reduced_any:
                 break
 
-    # --- FORMAT OUTPUT DISPLAY ARRAY ---
-    final_items = []
-    for name, details in parsed_basket.items():
+    # Build mobile array response payload
+    cards = []
+    for item_name, details in parsed_basket.items():
         if details["quantity"] > 0:
-            pack_units = details.get("pack_units", 1)
-            pack_label = f" ({pack_units}x Pack)" if pack_units > 1 else ""
-            
-            final_items.append({
-                "item_name": f"{name}{pack_label}",
-                "quantity": details["quantity"],
-                "unit_price": details["price"],
-                "subtotal": round(details["price"] * details["quantity"], 2),
-                "assigned_store": details["assigned_store"]
+            cards.append({
+                "title": f"{item_name} (x{details['quantity']})",
+                "subtitle": f"Best price: £{details['price']:.2f} at {details['assigned_store']}",
+                "price": round(details['price'] * details['quantity'], 2),
+                "store": details['assigned_store'],
+                "category": details['category']
             })
 
-    # --- AUDIT PERSISTENCE LAYER ---
-    save_optimization_record(
-        user_id=CURRENT_SESSION["id"],
-        budget=budget_limit,
-        initial=round(initial_total, 2),
-        final=round(get_total(), 2),
-        triaged=triage_triggered
-    )
+    final_total = get_total()
+
+    # Save details to optimization engine log row
+    try:
+        save_optimization_record(
+            user_id=int(user_id),
+            scanned_total=initial_total,
+            optimized_total=final_total,
+            triage_applied="Yes" if triage_triggered else "No"
+        )
+    except Exception as db_err:
+        print(f"⚠️ Database archiving failed: {db_err}")
 
     return {
-        "budget_limit": budget_limit,
-        "initial_total": round(initial_total, 2),
-        "final_total": round(get_total(), 2),
-        "triage_applied": triage_triggered,
-        "optimized_basket": final_items
-    }
-
-    def get_total():
-        return sum(d["price"] * d["quantity"] for d in parsed_basket.values())
-
-    initial_total = get_total()
-    triage_triggered = False
-
-    if initial_total > budget_limit:
-        triage_triggered = True
-        for name, details in parsed_basket.items():
-            if details["category"] == "treat":
-                details["quantity"] = 0
-                
-        while get_total() > budget_limit:
-            reduced_any = False
-            for name, details in parsed_basket.items():
-                if details["category"] == "carb" and details["quantity"] > 1:
-                    details["quantity"] -= 1
-                    reduced_any = True
-                    if get_total() <= budget_limit: break
-            if not reduced_any:
-                break
-
-    final_items = []
-    for name, details in parsed_basket.items():
-        if details["quantity"] > 0:
-            pack_units = details.get("pack_units", 1)
-            pack_label = f" ({pack_units}x Pack)" if pack_units > 1 else ""
-            
-            final_items.append({
-                "item_name": f"{name}{pack_label}",
-                "quantity": details["quantity"],
-                "unit_price": details["price"],
-                "subtotal": round(details["price"] * details["quantity"], 2),
-                "assigned_store": details["assigned_store"]
-            })
-
-    # Save to SQLite attached to the active user profile identification
-    save_optimization_record(
-        user_id=CURRENT_SESSION["id"],
-        budget=budget_limit,
-        initial=round(initial_total, 2),
-        final=round(get_total(), 2),
-        triaged=triage_triggered
-    )
-
-    return {
-        "budget_limit": budget_limit,
-        "initial_total": round(initial_total, 2),
-        "final_total": round(get_total(), 2),
-        "triage_applied": triage_triggered,
-        "optimized_basket": final_items
+        "success": True,
+        "mobile_user_tier": user_tier,
+        "metrics": {
+            "target_budget": budget,
+            "scanned_total": initial_total,
+            "optimized_total": final_total,
+            "savings_found": round(max(0.0, initial_total - final_total), 2),
+            "triage_applied": "Yes" if triage_triggered else "No"
+        },
+        "mobile_list_cards": cards
     }
 
 @app.get("/get-history")
-def get_history():
-    """Fetches history records filtering specifically by the active session profile identification."""
-    raw_logs = get_history_logs(user_id=CURRENT_SESSION["id"])
+def get_history(user_id: int = 1):
+    """Fetches history records filtering specifically by active profile references."""
+    raw_logs = get_history_logs(user_id=user_id)
     formatted_logs = []
     for row in raw_logs:
         formatted_logs.append({
@@ -360,66 +217,10 @@ def get_history():
             "budget": row[2],
             "initial": row[3],
             "final": row[4],
-            "triaged": "⚠️ YES" if row[5] == 1 else "✅ NO"
+            "triaged": "⚠️ YES" if row[5] == 1 or row[5] == "Yes" else "✅ NO"
         })
     return formatted_logs
 
-# --- MOBILE APP INTEGRATION ENDPOINT (API GATEWAY) ---
-@app.post("/api/mobile/scan-receipt")
-def mobile_api_scan(payload: dict):
-    """
-    Receives incoming text payloads directly from a mobile camera scan stream,
-    extracts user attributes dynamically from the request, runs the matrix pipeline,
-    and returns native-friendly JSON data.
-    """
-    raw_text = payload.get("text", "")
-    budget_limit = payload.get("budget", 50.00)
-    
-    # DYNAMIC AUTH: Read user details from the phone's request instead of a global variable
-    mobile_user_id = payload.get("user_id", 1)  # Defaults to user 1 if not provided
-    mobile_tier = payload.get("user_tier", "free")  # Defaults to "free" tier
-    
-    # Temporarily mock the session context just for the duration of this specific function run
-    global CURRENT_SESSION
-    original_session = CURRENT_SESSION.copy()
-    CURRENT_SESSION = {"id": mobile_user_id, "username": f"mobile_user_{mobile_user_id}", "tier": mobile_tier}
-    
-    try:
-        receipt_data = {"text": raw_text, "budget": budget_limit}
-        result = triage_receipt(receipt_data)
-        savings = round(result["initial_total"] - result["final_total"], 2)
-        
-        return {
-            "success": True,
-            "mobile_user_tier": mobile_tier,
-            "metrics": {
-                "target_budget": result["budget_limit"],
-                "scanned_total": result["initial_total"],
-                "optimized_total": result["final_total"],
-                "savings_found": savings,
-                "triage_applied": result["triage_applied"]
-            },
-            "mobile_list_cards": result["optimized_basket"]
-        }
-    finally:
-        # Restore the default session state so the web dashboard doesn't break
-        CURRENT_SESSION = original_session
-
-        from fastapi.responses import HTMLResponse
-import os
-
-@app.get("/", response_class=HTMLResponse)
-def read_root():
-    # Looks for your index.html file in the same directory
-    html_path = os.path.join(os.path.dirname(__file__), "index.html")
-    if os.path.exists(html_path):
-        with open(html_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h1>Supper-Shopper API is running!</h1><p>Visit /docs for the interactive portal.</p>"
-
 if __name__ == "__main__":
-    import uvicorn
-    import os
     port = int(os.environ.get("PORT", 8000))
-    # Turned reload OFF for multi-worker container stability
     uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False)

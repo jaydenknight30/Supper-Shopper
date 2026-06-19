@@ -2,186 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Supper-Shopper Mobile Hub</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --card-dark: #1e293b;
-            --accent-green: #10b981;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .app-container {
-            width: 100%;
-            max-width: 480px;
-            background: var(--card-dark);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        h1 { font-size: 24px; margin-bottom: 4px; color: var(--accent-green); }
-        .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
-        select, textarea, input {
-            width: 100%;
-            padding: 12px;
-            background: #334155;
-            border: 1px solid #475569;
-            border-radius: 8px;
-            color: white;
-            box-sizing: border-box;
-            margin-bottom: 16px;
-            font-size: 15px;
-        }
-        button {
-            width: 100%;
-            padding: 14px;
-            background: var(--accent-green);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        button:hover { opacity: 0.9; }
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 24px;
-        }
-        .metric-card {
-            background: #334155;
-            padding: 14px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .metric-val { font-size: 20px; font-weight: bold; margin-top: 4px; }
-        .card-list { margin-top: 24px; }
-        .item-card {
-            background: #334155;
-            padding: 14px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 4px solid var(--accent-green);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .item-card-title { font-weight: bold; text-transform: capitalize; }
-        .item-card-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-        
-/* 1. This forces the title and the sign-out button to opposite sides */
-.app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 24px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #1e293b;
-}
-
-/* 2. This keeps the sign-out button from stretching out like a large row */
-.header-action-btn {
-    background: #1e293b;
-    color: #94a3b8;
-    border: 1px solid #334155;
-    padding: 8px 16px;       /* Adds padding around the text */
-    border-radius: 20px;     /* Gives it a sleek pill look */
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    width: auto;             /* CRITICAL: Keeps it tight around the word "Sign Out" */
-    white-space: nowrap;     /* Prevents the text from wrapping onto two lines */
-    transition: all 0.2s ease;
-}
-
-.header-action-btn:hover {
-    background: #ef4444;
-    color: white;
-    border-color: #ef4444;
-}
-
-/* Enhanced Control Panel Layout Styling */
-.scanner-card {
-    background: #1e293b;
-    border-radius: 16px;
-    padding: 20px;
-    border: 1px solid #334155;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    margin-bottom: 20px;
-}
-
-.primary-scan-btn {
-    width: 100%;
-    padding: 14px;
-    background: #10b981;
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-weight: bold;
-    font-size: 15px;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-bottom: 20px;
-}
-
-.primary-scan-btn:hover {
-    background: #059669;
-}
-
-
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supper-Shopper</title>
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #1e293b; width: 100%; max-width: 400px; padding: 30px; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);">
-        <h2 id="auth-title" style="color: #34d399; font-size: 24px; font-weight: bold; margin-bottom: 8px; text-align: center;">Supper-Shopper</h2>
-        <p id="auth-subtitle" style="color: #94a3b8; font-size: 14px; text-align: center; margin-bottom: 24px;">Sign in to access your budget profile</p>
-        
-        <div style="margin-bottom: 16px;">
-        <label style="display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase;">Username</label>
-        <input type="text" id="auth-username" placeholder="e.g., premium_user" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; outline: none;">
-    </div>
-
-    <div style="margin-bottom: 24px;">
-        <label style="display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; text-transform: uppercase;">Password</label>
-        <input type="password" id="auth-password" oninput="checkPasswordStrength()" placeholder="••••••••" style="width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; font-size: 15px; outline: none;">
-        
-        <div id="strength-meter-wrapper" style="display: none; margin-top: 8px;">
-            <div style="display: flex; gap: 4px; height: 4px; width: 100%; background: #334155; border-radius: 2px; overflow: hidden; margin-bottom: 4px;">
-                <div id="bar-1" style="flex:1; transition: background 0.2s;"></div>
-                <div id="bar-2" style="flex:1; transition: background 0.2s;"></div>
-                <div id="bar-3" style="flex:1; transition: background 0.2s;"></div>
-            </div>
-            <span id="strength-text" style="font-size: 11px; color: #64748b; font-weight: 500;">Password requirements unmet.</span>
-        </div>
-    </div>
-        
-        <button type="button" onclick="handleAuthSubmit()" style="width: 100%; padding: 14px; background: #10b981; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s;">Continue</button>
-        
-        <div style="text-align: center;">
-            <span id="auth-toggle-text" style="color: #64748b; font-size: 14px;">Don't have an account? </span>
-            <a href="javascript:void(0)" onclick="toggleAuthMode()" id="auth-toggle-link" style="color: #34d399; font-size: 14px; text-decoration: none; font-weight: 500;">Create Account</a>
-        </div>
-    </div>
-</div>
 
 <div class="app-container">
     <header class="app-header">
@@ -189,9 +15,6 @@
             <h1>Supper-Shopper</h1>
             <div class="subtitle">Mobile Optimisation Controller</div>
         </div>
-        <button id="logout-btn" onclick="handleLogout()" class="header-action-btn">
-            Sign Out
-        </button>
     </header>
 
     <div class="scanner-card">
@@ -229,9 +52,7 @@
 </div>
 
 <script>
-
-
-// 4. Update the Upload Label Visual Feedback
+// 1. Update the Upload Label Visual Feedback
 function updateUploadStatus() {
     const fileInput = document.getElementById("receipt-file-input");
     const statusMsg = document.getElementById("upload-status-message");
@@ -240,7 +61,7 @@ function updateUploadStatus() {
     }
 }
 
-// 5. Receipt Engine Request Transmission Pipeline
+// 2. Receipt Engine Request Transmission Pipeline
 async function sendScanRequest() {
     const fileInput = document.getElementById("receipt-file-input");
     if (!fileInput || fileInput.files.length === 0) {
@@ -297,27 +118,6 @@ async function sendScanRequest() {
         document.getElementById("upload-status-message").innerHTML = `<span style="color: #ef4444;">Connection failed.</span>`;
     }
 }
-
-function handleLogout() {
-    // 1. Wipe out the saved user session memory
-    localStorage.removeItem("supper_shopper_user");
-    localStorage.removeItem("supper_shopper_tier");
-    
-    // 2. Bring back the mobile login screen overlay instantly
-    const overlay = document.getElementById("auth-overlay");
-    if (overlay) {
-        overlay.style.display = "flex";
-    }
-    
-    // 3. Reset the input text boxes so they are completely clean
-    const userField = document.getElementById("auth-username");
-    const passField = document.getElementById("auth-password");
-    if (userField) userField.value = "";
-    if (passField) passField.value = "";
-    
-    alert("You have logged out successfully.");
-}
-
 </script>
 
 </body>
