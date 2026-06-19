@@ -320,22 +320,21 @@ function checkPasswordStrength() {
     return score;
 }
 
-// 3. Network Authorization Submit Handler
 async function handleAuthSubmit() {
-    const userVal = document.getElementById("auth-username").value.trim();
-    const passVal = document.getElementById("auth-password").value.trim();
+    const userField = document.getElementById("auth-username");
+    const passField = document.getElementById("auth-password");
+    
+    if (!userField || !passField) return;
+    
+    const userVal = userField.value.trim();
+    const passVal = passField.value.trim();
     
     if (!userVal || !passVal) {
-        alert("Please complete all profile fields!");
+        alert("Please enter both a username and a password.");
         return;
     }
     
-    if (isSignUpMode && checkPasswordStrength() < 2) {
-        alert("Password security level is too low. Please make it stronger!");
-        return;
-    }
-    
-    // Clean relative path syntax
+    // Dynamically build the correct path relative to your Render deployment home URL
     const endpoint = isSignUpMode ? "/api/auth/signup" : "/api/auth/login";
     
     try {
@@ -349,7 +348,7 @@ async function handleAuthSubmit() {
         
         const result = await response.json();
         
-        // Checks if the server responded OK and the database check passed
+        // Enforce strict check on both HTTP status and backend success value
         if (response.ok && result.success === true) {
             if (isSignUpMode) {
                 alert("Account created successfully! Switching to sign-in screen.");
@@ -367,11 +366,11 @@ async function handleAuthSubmit() {
                 alert(`Welcome back ${userVal}!`);
             }
         } else {
-            // Catches invalid passwords, unregistered accounts, and custom error details
+            // This reads the explicit "Invalid username or password credentials" string from app.py
             alert(result.detail || "Authentication validation failed.");
         }
     } catch (err) {
-        alert("Server validation connection timed out.");
+        alert("Server connection failed. Please check your network and try again.");
     }
 }
 
