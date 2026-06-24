@@ -6,8 +6,7 @@ import numpy as np
 from PIL import Image
 import pytesseract
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db, save_optimization_record
 
@@ -158,3 +157,12 @@ async def triage_receipt(
         }
     except Exception as err:
         raise HTTPException(status_code=500, detail=f"Core vision runtime fault: {str(err)}")
+
+@app.get("/", response_class=HTMLResponse)
+def serve_home_page():
+    """Serves the main application front-end container webpage."""
+    try:
+        with open("index.html", "r", encoding="utf-8") as file:
+            return HTMLResponse(content=file.read(), status_code=200)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Front-end index file missing from directory structure.")
