@@ -6,3 +6,7 @@ passlib
 bcrypt
 python-multipart
 Pillow
+pytesseract
+opencv-python-headless
+pillow-heif
+numpy
