@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supper-Shopper</title>
@@ -208,16 +209,38 @@ async function sendScanRequest() {
 
     const tierSelect = document.getElementById("tierSelect");
     const tierVal = tierSelect ? tierSelect.value : "free";
+    const statusMsg = document.getElementById("upload-status-message");
 
-    const formData = new FormData();
-    formData.append("file", fileInput.files[0]);
-    formData.append("budget", "50.00");
-    formData.append("user_id", "1");
-    formData.append("user_tier", tierVal);
-
-    document.getElementById("upload-status-message").innerText = "Analyzing receipt characters (OCR)...";
+    // 1. Update UI to show the browser is running the OCR engine
+    statusMsg.innerText = "Reading receipt characters directly in browser...";
 
     try {
+        // 2. Perform client-side OCR extraction
+        const ocrResult = await Tesseract.recognize(
+            fileInput.files[0],
+            'eng',
+            { logger: m => console.log(`[OCR Progress]: ${m.status} (${Math.round(m.progress * 100)}%)`) }
+        );
+
+        const extractedText = ocrResult.data.text;
+        console.log("Extracted Text Output:\n", extractedText);
+
+        if (!extractedText.trim()) {
+            alert("Could not extract legible characters from the image. Please try a clearer picture.");
+            statusMsg.innerHTML = `<span style="color: #ef4444;">OCR read empty.</span>`;
+            return;
+        }
+
+        // 3. Package the extracted text into the form payload
+        const formData = new FormData();
+        formData.append("raw_text", extractedText); // Passes text instead of a heavy file binary
+        formData.append("budget", "50.00");
+        formData.append("user_id", "1");
+        formData.append("user_tier", tierVal);
+
+        statusMsg.innerText = "Parsing structural list items...";
+
+        // 4. Dispatch text directly to your Render backend API service
         const response = await fetch(`${window.location.origin}/api/mobile/scan-receipt`, {
             method: "POST",
             body: formData
@@ -226,9 +249,15 @@ async function sendScanRequest() {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            document.getElementById("upload-status-message").innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ File Processed Successfully!</span>`;
-            document.getElementById("scanTotal").innerText = `£${data.metrics.scanned_total.toFixed(2)}`;
-            document.getElementById("optTotal").innerText = `£${data.metrics.optimized_total.toFixed(2)}`;
+            statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ File Processed Successfully!</span>`;
+            
+            // Updates total indicators matching your current dashboard layout IDs
+            if (document.getElementById("scanTotal")) {
+                document.getElementById("scanTotal").innerText = `£${data.metrics.scanned_total.toFixed(2)}`;
+            }
+            if (document.getElementById("optTotal")) {
+                document.getElementById("optTotal").innerText = `£${data.metrics.optimized_total.toFixed(2)}`;
+            }
 
             const container = document.getElementById("cardContainer");
             if (container) {
@@ -247,12 +276,13 @@ async function sendScanRequest() {
                 });
             }
         } else {
-            alert(data.detail || "OCR system processing failure.");
-            document.getElementById("upload-status-message").innerHTML = `<span style="color: #text-muted;">Processing error.</span>`;
+            alert(data.detail || "Server parsing system processing failure.");
+            statusMsg.innerHTML = `<span style="color: #94a3b8;">Processing error.</span>`;
         }
     } catch (err) {
+        console.error("Runtime Exception:", err);
         alert("Network error processing receipt image analysis.");
-        document.getElementById("upload-status-message").innerHTML = `<span style="color: #ef4444;">Connection failed.</span>`;
+        statusMsg.innerHTML = `<span style="color: #ef4444;">Connection failed.</span>`;
     }
 }
 </script>

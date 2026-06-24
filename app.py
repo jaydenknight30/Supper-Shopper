@@ -1,12 +1,8 @@
 import io
 import re
-import cv2
 import uuid
-import numpy as np
-from PIL import Image
-import pytesseract
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Form
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db, save_optimization_record
@@ -31,22 +27,6 @@ MAPPING_DICTIONARY = {
     "coffee": {"clean_name": "Premium Coffee", "category": "treat"}
 }
 
-def preprocess_image_for_ocr(image_bytes: bytes) -> str:
-    """Uses OpenCV to optimize contrast and filter image noise for Tesseract."""
-    nparr = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if img is None:
-        return ""
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
-    
-    # CHANGED: Fixed the threshold flag name below
-    processed_img = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
-    )
-    custom_config = r'--oem 3 --psm 4'
-    return pytesseract.image_to_string(processed_img, config=custom_config)
-
 def detect_store_brand(raw_text: str) -> str:
     """Parses text flags to find out which store the receipt came from."""
     text_lower = raw_text.lower()
@@ -60,21 +40,17 @@ def detect_store_brand(raw_text: str) -> str:
 
 @app.post("/api/mobile/scan-receipt")
 async def triage_receipt(
-    file: UploadFile = File(...),
+    raw_text: str = Form(...),  # CHANGED: Accepts the string from the browser directly
     budget: float = Form(50.00),
     user_id: str = Form("1"),
     user_tier: str = Form("free")
 ):
     try:
-        # Generate tracking specs
         current_session_id = str(uuid.uuid4())
         rfc3339_timestamp = datetime.now(timezone.utc).isoformat()
         
-        file_bytes = await file.read()
-        raw_text = preprocess_image_for_ocr(file_bytes)
-        
         if not raw_text.strip():
-            raise HTTPException(status_code=400, detail="Could not read any text from the receipt photo.")
+            raise HTTPException(status_code=400, detail="The browser sent over empty receipt text.")
             
         assigned_store = detect_store_brand(raw_text)
         
@@ -118,7 +94,7 @@ async def triage_receipt(
 
         scanned_total = sum(d["price"] * d["quantity"] for d in parsed_basket.values())
         if scanned_total == 0:
-            raise HTTPException(status_code=400, detail="No valid items extracted.")
+            raise HTTPException(status_code=400, detail="No valid items extracted from text.")
 
         cards = []
         for item_name, details in parsed_basket.items():
@@ -159,7 +135,7 @@ async def triage_receipt(
             "mobile_list_cards": cards
         }
     except Exception as err:
-        raise HTTPException(status_code=500, detail=f"Core vision runtime fault: {str(err)}")
+        raise HTTPException(status_code=500, detail=f"Core parsing execution runtime fault: {str(err)}")
 
 @app.get("/", response_class=HTMLResponse)
 def serve_home_page():
