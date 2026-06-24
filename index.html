@@ -211,74 +211,121 @@ async function sendScanRequest() {
     const tierVal = tierSelect ? tierSelect.value : "free";
     const statusMsg = document.getElementById("upload-status-message");
 
-    // 1. Update UI to show the browser is running the OCR engine
-    statusMsg.innerText = "Reading receipt characters directly in browser...";
+    statusMsg.innerText = "Checking image scale metadata...";
 
     try {
-        // 2. Perform client-side OCR extraction
-        const ocrResult = await Tesseract.recognize(
-            fileInput.files[0],
-            'eng',
-            { logger: m => console.log(`[OCR Progress]: ${m.status} (${Math.round(m.progress * 100)}%)`) }
-        );
+        const file = fileInput.files[0];
 
-        const extractedText = ocrResult.data.text;
-        console.log("Extracted Text Output:\n", extractedText);
-
-        if (!extractedText.trim()) {
-            alert("Could not extract legible characters from the image. Please try a clearer picture.");
-            statusMsg.innerHTML = `<span style="color: #ef4444;">OCR read empty.</span>`;
-            return;
-        }
-
-        // 3. Package the extracted text into the form payload
-        const formData = new FormData();
-        formData.append("raw_text", extractedText); // Passes text instead of a heavy file binary
-        formData.append("budget", "50.00");
-        formData.append("user_id", "1");
-        formData.append("user_tier", tierVal);
-
-        statusMsg.innerText = "Parsing structural list items...";
-
-        // 4. Dispatch text directly to your Render backend API service
-        const response = await fetch(`${window.location.origin}/api/mobile/scan-receipt`, {
-            method: "POST",
-            body: formData
+        // Read image resource dynamically to check pixel boundaries
+        const img = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = reject;
+                image.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
         });
 
-        const data = await response.json();
+        // 2K Resolution Upscaler Computation Logic Box
+        const TARGET_MIN_RESOLUTION = 2048;
+        let targetWidth = img.width;
+        let targetHeight = img.height;
 
-        if (response.ok && data.success) {
-            statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ File Processed Successfully!</span>`;
-            
-            // Updates total indicators matching your current dashboard layout IDs
-            if (document.getElementById("scanTotal")) {
-                document.getElementById("scanTotal").innerText = `£${data.metrics.scanned_total.toFixed(2)}`;
+        if (img.width < TARGET_MIN_RESOLUTION && img.height < TARGET_MIN_RESOLUTION) {
+            if (img.width >= img.height) {
+                targetWidth = TARGET_MIN_RESOLUTION;
+                targetHeight = Math.round((img.height * TARGET_MIN_RESOLUTION) / img.width);
+            } else {
+                targetHeight = TARGET_MIN_RESOLUTION;
+                targetWidth = Math.round((img.width * TARGET_MIN_RESOLUTION) / img.height);
             }
-            if (document.getElementById("optTotal")) {
-                document.getElementById("optTotal").innerText = `£${data.metrics.optimized_total.toFixed(2)}`;
-            }
-
-            const container = document.getElementById("cardContainer");
-            if (container) {
-                container.innerHTML = "";
-                data.mobile_list_cards.forEach(card => {
-                    const cardEl = document.createElement("div");
-                    cardEl.className = "item-card";
-                    cardEl.innerHTML = `
-                        <div>
-                            <div class="item-card-title">${card.title}</div>
-                            <div class="item-card-sub">${card.subtitle}</div>
-                        </div>
-                        <div style="font-weight: bold; color: var(--accent-green); font-size: 16px;">£${card.price.toFixed(2)}</div>
-                    `;
-                    container.appendChild(cardEl);
-                });
-            }
-        } else {
-            alert(data.detail || "Server parsing system processing failure.");
-            statusMsg.innerHTML = `<span style="color: #94a3b8;">Processing error.</span>`;
         }
+
+        // Initialize upscale graphics canvas context buffer
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        statusMsg.innerText = `Running 2K OCR scan (${targetWidth}x${targetHeight})...`;
+
+        // Execute local client browser OCR extraction out of upscale canvas buffer
+        canvas.toBlob(async (blob) => {
+            try {
+                const ocrResult = await Tesseract.recognize(
+                    blob,
+                    'eng',
+                    { logger: m => console.log(`[OCR Progress]: ${m.status} (${Math.round(m.progress * 100)}%)`) }
+                );
+
+                const extractedText = ocrResult.data.text;
+                console.log("Upscaled Character Output Text:\n", extractedText);
+
+                if (!extractedText.trim()) {
+                    alert("Could not extract legible characters from the upscaled frame. Please use a sharper photo instance.");
+                    statusMsg.innerHTML = `<span style="color: #ef4444;">OCR read empty.</span>`;
+                    return;
+                }
+
+                // Construct backend runtime transaction payload 
+                const formData = new FormData();
+                formData.append("raw_text", extractedText);
+                formData.append("budget", "50.00");
+                formData.append("user_id", "1");
+                formData.append("user_tier", tierVal);
+
+                statusMsg.innerText = "Parsing structural list items...";
+
+                const response = await fetch(`${window.location.origin}/api/mobile/scan-receipt`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ File Processed Successfully!</span>`;
+                    
+                    if (document.getElementById("scanTotal")) {
+                        document.getElementById("scanTotal").innerText = `£${data.metrics.scanned_total.toFixed(2)}`;
+                    }
+                    if (document.getElementById("optTotal")) {
+                        document.getElementById("optTotal").innerText = `£${data.metrics.optimized_total.toFixed(2)}`;
+                    }
+
+                    const container = document.getElementById("cardContainer");
+                    if (container) {
+                        container.innerHTML = "";
+                        data.mobile_list_cards.forEach(card => {
+                            const cardEl = document.createElement("div");
+                            cardEl.className = "item-card";
+                            cardEl.innerHTML = `
+                                <div>
+                                    <div class="item-card-title">${card.title}</div>
+                                    <div class="item-card-sub">${card.subtitle}</div>
+                                </div>
+                                <div style="font-weight: bold; color: var(--accent-green); font-size: 16px;">£${card.price.toFixed(2)}</div>
+                            `;
+                            container.appendChild(cardEl);
+                        });
+                    }
+                } else {
+                    alert(data.detail || "Server parsing system processing failure.");
+                    statusMsg.innerHTML = `<span style="color: #94a3b8;">Processing error.</span>`;
+                }
+            } catch (ocrErr) {
+                console.error("OCR Worker Exception:", ocrErr);
+                alert("Error during OCR calculation stage.");
+                statusMsg.innerHTML = `<span style="color: #ef4444;">OCR crashed.</span>`;
+            }
+        }, 'image/jpeg', 0.95);
+
     } catch (err) {
         console.error("Runtime Exception:", err);
         alert("Network error processing receipt image analysis.");
