@@ -6,7 +6,8 @@ import numpy as np
 from PIL import Image
 import pytesseract
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, HTMLResponse
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db, save_optimization_record
 
