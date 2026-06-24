@@ -39,8 +39,10 @@ def preprocess_image_for_ocr(image_bytes: bytes) -> str:
         return ""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
+    
+    # CHANGED: Fixed the threshold flag name below
     processed_img = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C_16, cv2.THRESH_BINARY, 11, 2
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
     )
     custom_config = r'--oem 3 --psm 4'
     return pytesseract.image_to_string(processed_img, config=custom_config)
