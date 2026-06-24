@@ -42,14 +42,16 @@ def init_db():
     conn.close()
     print("💾 Database upgraded with User Account Profiles!")
 
-def save_optimization_record(user_id: int, budget: float, initial: float, final: float, triaged: bool):
-    """Saves a calculation log attached to a specific user id."""
-    conn = sqlite3.connect(DB_NAME)
+def save_optimization_record(user_id, scanned_total, optimized_total, triage_applied, session_id, timestamp, store_name):
+    conn = sqlite3.connect("supershopper.db")
     cursor = conn.cursor()
+    
     cursor.execute("""
-        INSERT INTO history (user_id, budget, initial_total, final_total, triage_applied)
-        VALUES (?, ?, ?, ?, ?)
-    """, (user_id, budget, initial, final, 1 if triaged else 0))
+        INSERT INTO optimization_records (
+            user_id, scanned_total, optimized_total, triage_applied, session_id, timestamp, store_name
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, scanned_total, optimized_total, triage_applied, session_id, timestamp, store_name))
+    
     conn.commit()
     conn.close()
 
