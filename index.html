@@ -4,9 +4,9 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supper-Shopper</title>
+    <title>Supper-Shopper App Controller</title>
     <style>
-        /* Modern Dark Theme Initialization Core Variables */
+        /* Modern SaaS Dark Core Variables */
         :root {
             --bg-dark: #0f172a;
             --card-bg: #1e293b;
@@ -34,7 +34,6 @@
             padding: 40px 20px;
         }
 
-        /* SaaS Dedicated App Dashboard Card Frame Layout */
         .app-container {
             background: var(--card-bg);
             width: 100%;
@@ -45,7 +44,6 @@
             border: 1px solid var(--border-color);
         }
 
-        /* Custom Header Brand Identity Section */
         .app-header {
             margin-bottom: 24px;
             padding-bottom: 18px;
@@ -66,7 +64,6 @@
             font-weight: 500;
         }
 
-        /* Optimization Execution Action Button UI Rules */
         .primary-scan-btn {
             width: 100%;
             background-color: var(--accent-green);
@@ -91,7 +88,6 @@
             transform: scale(0.98);
         }
 
-        /* Twin Analytics Matrix Metrics Column Layout */
         .metrics-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -115,7 +111,6 @@
             letter-spacing: -0.01em;
         }
 
-        /* Parsed Optimization Output Cards Stack */
         .card-list {
             margin-top: 24px;
             display: flex;
@@ -144,6 +139,18 @@
             font-size: 13px;
             color: var(--text-muted);
             margin-top: 4px;
+        }
+
+        .pipeline-stats {
+            font-size: 12px;
+            color: #a7f3d0;
+            background: rgba(16, 185, 129, 0.08);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            font-family: monospace;
         }
     </style>
 </head>
@@ -174,6 +181,8 @@
             </div>
         </div>
 
+        <div id="pipelineStats" class="pipeline-stats"></div>
+
         <button onclick="sendScanRequest()" class="primary-scan-btn">Scan & Optimise Basket</button>
 
         <div class="metrics-grid">
@@ -195,8 +204,10 @@
 function updateUploadStatus() {
     const fileInput = document.getElementById("receipt-file-input");
     const statusMsg = document.getElementById("upload-status-message");
+    const statsDiv = document.getElementById("pipelineStats");
     if (fileInput && fileInput.files.length > 0 && statusMsg) {
         statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">📁 File Ready:</span> ${fileInput.files[0].name}`;
+        if (statsDiv) statsDiv.style.display = "none"; 
     }
 }
 
@@ -210,13 +221,14 @@ async function sendScanRequest() {
     const tierSelect = document.getElementById("tierSelect");
     const tierVal = tierSelect ? tierSelect.value : "free";
     const statusMsg = document.getElementById("upload-status-message");
+    const statsDiv = document.getElementById("pipelineStats");
 
-    statusMsg.innerText = "Checking image scale metadata...";
+    statusMsg.innerText = "Analyzing pixel properties...";
 
     try {
         const file = fileInput.files[0];
 
-        // Read image resource dynamically to check pixel boundaries
+        // 1. Read image properties asynchronously inside user memory
         const img = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -229,7 +241,7 @@ async function sendScanRequest() {
             reader.readAsDataURL(file);
         });
 
-        // 2K Resolution Upscaler Computation Logic Box
+        // 2. Compute 2K Resampling boundaries (Target Minimum: 2048px)
         const TARGET_MIN_RESOLUTION = 2048;
         let targetWidth = img.width;
         let targetHeight = img.height;
@@ -244,7 +256,7 @@ async function sendScanRequest() {
             }
         }
 
-        // Initialize upscale graphics canvas context buffer
+        // 3. Render upscale frame to a virtual HTML5 canvas mapping context
         const canvas = document.createElement('canvas');
         canvas.width = targetWidth;
         canvas.height = targetHeight;
@@ -253,34 +265,44 @@ async function sendScanRequest() {
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-        statusMsg.innerText = `Running 2K OCR scan (${targetWidth}x${targetHeight})...`;
+        // Update technical status window overlay
+        if (statsDiv) {
+            statsDiv.style.display = "block";
+            statsDiv.innerHTML = `⚙️ <strong>Upscale Pipeline Log:</strong><br>• Input: ${img.width}x${img.height}px<br>• Processing Scale: ${targetWidth}x${targetHeight}px (2K boosted)`;
+        }
 
-        // Execute local client browser OCR extraction out of upscale canvas buffer
+        statusMsg.innerText = "Running client-side Tesseract engine...";
+
+        // 4. Run character extraction out of upscaled canvas blob array data
         canvas.toBlob(async (blob) => {
             try {
                 const ocrResult = await Tesseract.recognize(
                     blob,
                     'eng',
-                    { logger: m => console.log(`[OCR Progress]: ${m.status} (${Math.round(m.progress * 100)}%)`) }
+                    { logger: m => {
+                        if (m.status === 'recognizing text') {
+                            statusMsg.innerText = `Extracting Text Matrix: ${Math.round(m.progress * 100)}%`;
+                        }
+                    }}
                 );
 
                 const extractedText = ocrResult.data.text;
-                console.log("Upscaled Character Output Text:\n", extractedText);
+                console.log("Extracted payload text text array:\n", extractedText);
 
                 if (!extractedText.trim()) {
-                    alert("Could not extract legible characters from the upscaled frame. Please use a sharper photo instance.");
-                    statusMsg.innerHTML = `<span style="color: #ef4444;">OCR read empty.</span>`;
+                    alert("Could not pull text assets out of the framework. Make sure text lines are lit properly.");
+                    statusMsg.innerHTML = `<span style="color: #ef4444;">Extraction empty.</span>`;
                     return;
                 }
 
-                // Construct backend runtime transaction payload 
+                // 5. Structure payload parameters and deliver text straight to Render Server API endpoint
                 const formData = new FormData();
                 formData.append("raw_text", extractedText);
                 formData.append("budget", "50.00");
                 formData.append("user_id", "1");
                 formData.append("user_tier", tierVal);
 
-                statusMsg.innerText = "Parsing structural list items...";
+                statusMsg.innerText = "Synchronizing structured shopping matrix...";
 
                 const response = await fetch(`${window.location.origin}/api/mobile/scan-receipt`, {
                     method: "POST",
@@ -290,7 +312,7 @@ async function sendScanRequest() {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ File Processed Successfully!</span>`;
+                    statusMsg.innerHTML = `<span style="color: #34d399; font-weight: bold;">✅ Analysis Sync Successful!</span>`;
                     
                     if (document.getElementById("scanTotal")) {
                         document.getElementById("scanTotal").innerText = `£${data.metrics.scanned_total.toFixed(2)}`;
@@ -316,19 +338,19 @@ async function sendScanRequest() {
                         });
                     }
                 } else {
-                    alert(data.detail || "Server parsing system processing failure.");
+                    alert(data.detail || "Server sorting parsing exception.");
                     statusMsg.innerHTML = `<span style="color: #94a3b8;">Processing error.</span>`;
                 }
             } catch (ocrErr) {
-                console.error("OCR Worker Exception:", ocrErr);
-                alert("Error during OCR calculation stage.");
-                statusMsg.innerHTML = `<span style="color: #ef4444;">OCR crashed.</span>`;
+                console.error("Local Worker Core Exception:", ocrErr);
+                alert("Internal failure rendering Tesseract processing array.");
+                statusMsg.innerHTML = `<span style="color: #ef4444;">OCR Engine Fault.</span>`;
             }
         }, 'image/jpeg', 0.95);
 
     } catch (err) {
         console.error("Runtime Exception:", err);
-        alert("Network error processing receipt image analysis.");
+        alert("Network communication sequence error.");
         statusMsg.innerHTML = `<span style="color: #ef4444;">Connection failed.</span>`;
     }
 }
